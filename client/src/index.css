@@ -29,20 +29,22 @@
   html {
     scroll-behavior: smooth;
   }
+
+  /* Hide number input spinners (Chrome, Safari, Edge, Opera) */
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  /* Hide number input spinners (Firefox) */
+  input[type=number] {
+    -moz-appearance: textfield;
+  }
 }
 
 @layer components {
-  .btn-primary {
-    @apply px-4 py-2 rounded-lg font-medium transition-colors text-white;
-    background-color: #22c55e;
-  }
-  .btn-primary:hover {
-    background-color: #16a34a;
-  }
-  .btn-primary:focus {
-    outline: none;
-    box-shadow: 0 0 0 2px #fff, 0 0 0 4px #22c55e;
-  }
+  /* .btn-primary removed in favor of utility classes (bg-green-600) */
   
   .card {
     @apply bg-white border border-gray-200 rounded-xl shadow-sm;
