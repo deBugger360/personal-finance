@@ -31,6 +31,21 @@ router.post('/', asyncHandler(async (req, res) => {
   res.json({ id: result.lastInsertRowid });
 }));
 
+router.post('/batch', asyncHandler(async (req, res) => {
+  const transactions = req.body;
+  if (!Array.isArray(transactions) || transactions.length === 0) {
+    throw new AppError('Invalid batch data', 400);
+  }
+
+  const insert = db.prepare('INSERT INTO transactions (date, amount, description, category_id, type) VALUES (@date, @amount, @description, @category_id, @type)');
+  const insertMany = db.transaction((rows) => {
+    for (const row of rows) insert.run(row);
+  });
+
+  insertMany(transactions);
+  res.json({ success: true, count: transactions.length });
+}));
+
 router.put('/:id', asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { date, amount, description, category_id, type } = req.body;

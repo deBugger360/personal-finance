@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../../lib/api';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Upload } from 'lucide-react';
 
 export function LedgerView() {
     const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [importing, setImporting] = useState(false);
+    const fileRef = useRef(null);
 
     const fetchTransactions = () => {
         api.get('/transactions')
@@ -23,10 +25,65 @@ export function LedgerView() {
         if (window.confirm('Are you sure you want to delete this transaction?')) {
             try {
                 await api.del(`/transactions/${id}`);
-                fetchTransactions(); // Refresh list to reflect correct totals
+                fetchTransactions();
             } catch (err) {
                 alert('Failed to delete transaction');
             }
+        }
+    };
+
+    const handleImportClick = () => fileRef.current.click();
+
+    const handleFileChange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // MVP: Assume simple CSV format: date,amount,description
+        // Defaulting all to 'expense' and category 'Others' (id: 1 presumably, or we map it)
+        // For verify step: We will just try to parse a specific simple format.
+
+        const text = await file.text();
+        const lines = text.split('\n').filter(l => l.trim().length > 0);
+        // Skip header if present (heuristic: first line contains 'date')
+        const startIdx = lines[0].toLowerCase().includes('date') ? 1 : 0;
+
+        const newTrans = [];
+
+        for (let i = startIdx; i < lines.length; i++) {
+            // Very naive split, doesn't handle commas in quotes. MVP.
+            const cols = lines[i].split(',');
+            if (cols.length >= 3) {
+                const date = cols[0].trim();
+                const amount = parseFloat(cols[1].trim());
+                const desc = cols[2].trim();
+
+                if (date && !isNaN(amount)) {
+                    newTrans.push({
+                        date,
+                        amount: Math.abs(amount), // Import as positive for amount
+                        type: 'expense', // Forced as per prompt scope
+                        description: desc,
+                        category_id: 1 // Default category (usually a fallback)
+                    });
+                }
+            }
+        }
+
+        if (newTrans.length > 0) {
+            setImporting(true);
+            try {
+                await api.post('/transactions/batch', newTrans);
+                alert(`Successfully imported ${newTrans.length} transactions!`);
+                fetchTransactions();
+            } catch (err) {
+                alert('Import failed: ' + err.message);
+            } finally {
+                setImporting(false);
+                e.target.value = null; // Reset input
+            }
+        } else {
+            alert("No valid transactions found. Format: Date,Amount,Description");
+            e.target.value = null;
         }
     };
 
@@ -38,7 +95,27 @@ export function LedgerView() {
 
     return (
         <div className="animate-fade-in">
-            <h2>Transaction Ledger</h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h2>Transaction Ledger</h2>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <input
+                        type="file"
+                        ref={fileRef}
+                        style={{ display: 'none' }}
+                        accept=".csv"
+                        onChange={handleFileChange}
+                    />
+                    <button
+                        onClick={handleImportClick}
+                        className="btn-secondary"
+                        disabled={importing}
+                        style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem' }}
+                    >
+                        <Upload size={16} /> {importing ? 'Importing...' : 'Import CSV'}
+                    </button>
+                </div>
+            </div>
+
             <div className="glass card" style={{ marginTop: '1rem', padding: 0 }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>

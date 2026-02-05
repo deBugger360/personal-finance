@@ -20,6 +20,7 @@ app.use('/api/summary', require('./routes/summary'));
 app.use('/api/budgets', require('./routes/budgets'));
 app.use('/api/goals', require('./routes/goals'));
 app.use('/api/insights', require('./routes/insights'));
+app.use('/api/data', require('./routes/data'));
 
 // Error Handling (Must be last)
 const { errorHandler } = require('./middleware/error');
