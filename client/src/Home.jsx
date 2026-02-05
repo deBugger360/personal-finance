@@ -5,6 +5,7 @@ import { InsightCard } from './features/insights/InsightCard';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, DollarSign, TrendingDown, Wallet, Plus } from 'lucide-react';
 import { getIconForCategory } from './lib/categoryIcons';
+import { OnboardingHero } from './features/onboarding/OnboardingHero';
 
 export function Home() {
     const [summary, setSummary] = useState(null);
@@ -74,9 +75,11 @@ export function Home() {
         return <Icon size={20} className="text-gray-500" strokeWidth={2} />;
     };
 
+    const showOnboarding = transactions.length === 0;
+
     return (
         <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-8">
-            {/* Greeting */}
+            {/* Greeting & Header */}
             <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1 tracking-tight">
@@ -95,72 +98,62 @@ export function Home() {
                 </button>
             </header>
 
-            {/* Insight Card */}
-            <div className="mb-8">
-                <InsightCard />
-            </div>
+            {showOnboarding ? (
+                <OnboardingHero />
+            ) : (
+                <>
+                    {/* Insight Card */}
+                    <div className="mb-8">
+                        <InsightCard />
+                    </div>
 
-            {/* Dashboard Stats */}
-            <DashboardView summary={summary} />
+                    {/* Dashboard Stats */}
+                    <DashboardView summary={summary} />
 
-            {/* Recent Activity */}
-            <div className="mt-8">
-                <div className="flex items-center justify-between mb-4 px-1">
-                    <h2 className="text-lg font-bold text-gray-900">Recent Activity</h2>
-                    <button
-                        onClick={() => navigate('/transactions')}
-                        className="group flex items-center gap-1 text-sm font-medium text-green-600 hover:text-green-700 transition-colors"
-                    >
-                        See All
-                        <ArrowRight size={16} strokeWidth={2.5} className="group-hover:translate-x-1 transition-transform" />
-                    </button>
-                </div>
-
-                <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-300">
-                    {transactions.length === 0 ? (
-                        <div className="py-12 text-center">
-                            <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-gray-100">
-                                <Wallet size={32} className="text-gray-400" strokeWidth={1.5} />
-                            </div>
-                            <h3 className="text-gray-900 font-medium mb-1">No recent activity</h3>
-                            <p className="text-sm text-gray-500 mb-6">Your latest transactions will appear here</p>
+                    {/* Recent Activity */}
+                    <div className="mt-8">
+                        <div className="flex items-center justify-between mb-4 px-1">
+                            <h2 className="text-lg font-bold text-gray-900">Recent Activity</h2>
                             <button
-                                onClick={() => navigate('/add')}
-                                className="text-green-600 font-medium text-sm hover:underline"
+                                onClick={() => navigate('/transactions')}
+                                className="group flex items-center gap-1 text-sm font-medium text-green-600 hover:text-green-700 transition-colors"
                             >
-                                add your first transaction
+                                See All
+                                <ArrowRight size={16} strokeWidth={2.5} className="group-hover:translate-x-1 transition-transform" />
                             </button>
                         </div>
-                    ) : (
-                        <div className="divide-y divide-gray-100">
-                            {transactions.map(t => (
-                                <div
-                                    key={t.id}
-                                    className="group flex items-center gap-4 p-4 hover:bg-gray-50 transition-colors cursor-pointer"
-                                    onClick={() => navigate('/transactions')}
-                                >
-                                    <div className="flex-shrink-0 w-10 h-10 bg-gray-100 group-hover:bg-white border border-transparent group-hover:border-gray-200 rounded-lg flex items-center justify-center transition-all">
-                                        {getCategoryIcon(t.category_name)}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="font-semibold text-gray-900 truncate">
-                                            {t.category_name || 'Unknown'}
+
+                        <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-300">
+                            <div className="divide-y divide-gray-100">
+                                {transactions.map(t => (
+                                    <div
+                                        key={t.id}
+                                        className="group flex items-center gap-4 p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                                        onClick={() => navigate('/transactions')}
+                                    >
+                                        <div className="flex-shrink-0 w-10 h-10 bg-gray-100 group-hover:bg-white border border-transparent group-hover:border-gray-200 rounded-lg flex items-center justify-center transition-all">
+                                            {getCategoryIcon(t.category_name)}
                                         </div>
-                                        <div className="text-xs text-gray-500 truncate">
-                                            {t.description || new Date(t.date).toLocaleDateString()}
+                                        <div className="flex-1 min-w-0">
+                                            <div className="font-semibold text-gray-900 truncate">
+                                                {t.category_name || 'Unknown'}
+                                            </div>
+                                            <div className="text-xs text-gray-500 truncate">
+                                                {t.description || new Date(t.date).toLocaleDateString()}
+                                            </div>
+                                        </div>
+                                        <div className={`font-bold text-right ${t.type === 'income' ? 'text-green-600' : 'text-gray-900'
+                                            }`}>
+                                            {t.type === 'expense' ? '-' : '+'}
+                                            ${Number(t.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                         </div>
                                     </div>
-                                    <div className={`font-bold text-right ${t.type === 'income' ? 'text-green-600' : 'text-gray-900'
-                                        }`}>
-                                        {t.type === 'expense' ? '-' : '+'}
-                                        ${Number(t.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                    </div>
-                                </div>
-                            ))}
+                                ))}
+                            </div>
                         </div>
-                    )}
-                </div>
-            </div>
+                    </div>
+                </>
+            )}
         </div>
     );
 }
