@@ -1,0 +1,16 @@
+{
+  "name": "personal-finance",
+  "version": "1.0.0",
+  "description": "## Core Principles - **Offline-First**: All data lives locally in `finance.db`. - **Speed > Perfection**: Fast interactions, simple UI. - **Awareness > Punishment**: Visualization over strict budgeting.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "concurrently -n \"API,CLIENT\" -c \"blue,green\" \"npm run dev --prefix server\" \"npm run dev --prefix client\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
