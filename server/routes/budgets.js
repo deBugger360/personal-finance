@@ -1,11 +1,12 @@
 const express = require('express');
 const { db } = require('../db');
+const { asyncHandler, AppError } = require('../middleware/error');
 const router = express.Router();
 
 // Get budgets status for a specific month (Budget vs Actual)
-router.get('/status', (req, res) => {
+router.get('/status', asyncHandler(async (req, res) => {
   const { month } = req.query; // YYYY-MM
-  if (!month) return res.status(400).json({ error: 'Month required' });
+  if (!month) throw new AppError('Month required', 400);
 
   // Complex query: Join Categories + Budgets + Transactions Sum
   const stmt = db.prepare(`
@@ -28,12 +29,16 @@ router.get('/status', (req, res) => {
   `);
 
   res.json(stmt.all(month, month));
-});
+}));
 
 // Set a budget for a category/month
-router.post('/', (req, res) => {
+router.post('/', asyncHandler(async (req, res) => {
   const { category_id, month, amount } = req.body;
   
+  if (!category_id || !month) {
+    throw new AppError('Category ID and Month are required', 400);
+  }
+
   if (amount > 0) {
     const stmt = db.prepare(`
       INSERT INTO budgets (category_id, month_iso, amount)
@@ -49,6 +54,6 @@ router.post('/', (req, res) => {
   }
   
   res.json({ success: true });
-});
+}));
 
 module.exports = router;

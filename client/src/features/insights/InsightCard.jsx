@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { API_URL } from '../../lib/api';
+import { api } from '../../lib/api';
 import { Lightbulb, AlertTriangle, TrendingUp } from 'lucide-react';
 
 export function InsightCard() {
     const [insight, setInsight] = useState(null);
 
     useEffect(() => {
-        fetch(`${API_URL}/insights`)
-            .then(res => res.json())
+        api.get('/insights')
             .then(data => {
-                if (data.length > 0) setInsight(data[0]); // Only show top insight
-            });
+                if (data && data.length > 0) setInsight(data[0]); // Only show top insight
+            })
+            .catch(console.error);
     }, []);
 
     if (!insight) return null;

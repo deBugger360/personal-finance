@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { API_URL } from './lib/api';
+import { api } from './lib/api';
 import { DashboardView } from './features/dashboard/DashboardView';
 import { InsightCard } from './features/insights/InsightCard';
 import { TransactionList } from './features/transactions/TransactionList';
@@ -10,25 +10,25 @@ export function Home() {
     const [transactions, setTransactions] = useState([]);
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const navigate = useNavigate();
 
     const refreshData = async () => {
+        setLoading(true);
+        setError(null);
         try {
-            const [sumRes, transRes, catsRes] = await Promise.all([
-                fetch(`${API_URL}/summary?month=${new Date().toISOString().slice(0, 7)}`),
-                fetch(`${API_URL}/transactions`),
-                fetch(`${API_URL}/categories`)
+            const [sumData, transData, catsData] = await Promise.all([
+                api.get(`/summary?month=${new Date().toISOString().slice(0, 7)}`),
+                api.get('/transactions'),
+                api.get('/categories')
             ]);
-
-            const sumData = await sumRes.json();
-            const transData = await transRes.json();
-            const catsData = await catsRes.json();
 
             setSummary(sumData);
             setTransactions(transData.slice(0, 3)); // Only show top 3 on home
             setCategories(catsData);
         } catch (err) {
             console.error(err);
+            setError("Unable to connect to the server. Please check your connection.");
         } finally {
             setLoading(false);
         }
@@ -38,7 +38,19 @@ export function Home() {
         refreshData();
     }, []);
 
-    if (loading) return <div>Loading...</div>;
+    if (loading) return (
+        <div style={{ padding: '2rem', textAlign: 'center', opacity: 0.6 }}>
+            Loading your finances...
+        </div>
+    );
+
+    if (error) return (
+        <div style={{ padding: '2rem', textAlign: 'center' }}>
+            <h2 style={{ color: 'var(--danger)', marginBottom: '1rem' }}>Connection Failed</h2>
+            <p style={{ marginBottom: '1.5rem', opacity: 0.8 }}>{error}</p>
+            <button className="btn-primary" onClick={refreshData}>Retry Connection</button>
+        </div>
+    );
 
     return (
         <div>
@@ -65,10 +77,10 @@ export function Home() {
                         {transactions.map(t => (
                             <tr key={t.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                                 <td style={{ padding: '1rem' }}>
-                                    <div style={{ fontSize: '1.2rem' }}>{t.category_icon}</div>
+                                    <div style={{ fontSize: '1.2rem' }}>{t.category_icon || '📦'}</div>
                                 </td>
                                 <td style={{ padding: '1rem' }}>
-                                    <div style={{ fontWeight: 500 }}>{t.category_name}</div>
+                                    <div style={{ fontWeight: 500 }}>{t.category_name || 'Unknown'}</div>
                                     <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{t.description || t.date}</div>
                                 </td>
                                 <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 'bold', color: t.type === 'income' ? 'var(--success)' : 'var(--text-main)' }}>
