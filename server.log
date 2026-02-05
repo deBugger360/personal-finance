@@ -1,0 +1,1992 @@
+
+> personal-finance@1.0.0 dev
+> concurrently -n "API,CLIENT" -c "blue,green" "npm run dev --prefix server" "npm run dev --prefix client"
+
+[API] 
+[API] > server@1.0.0 dev
+[API] > node --watch index.js
+[API] 
+[CLIENT] 
+[CLIENT] > client@0.0.0 dev
+[CLIENT] > vite --port 3000 --strictPort
+[CLIENT] 
+[API] PRAGMA foreign_keys = ON
+[API] CREATE TABLE IF NOT EXISTS _migrations (
+[API]       id INTEGER PRIMARY KEY AUTOINCREMENT,
+[API]       name TEXT NOT NULL UNIQUE,
+[API]       applied_at DATETIME DEFAULT CURRENT_TIMESTAMP
+[API]     );
+[API] SELECT id FROM _migrations WHERE name = '001_consolidated_schema.js'
+[API] SELECT id FROM _migrations WHERE name = '002_add_category_desc.js'
+[API] Server running on http://localhost:3001
+[CLIENT] 
+[CLIENT]   VITE v7.3.1  ready in 321 ms
+[CLIENT] 
+[CLIENT]   ➜  Local:   http://localhost:3000/
+[CLIENT]   ➜  Network: use --host to expose
+[API] 
+[API]     SELECT 
+[API]       category_id,
+[API]       AVG(monthly_total) as avg_spend,
+[API]       MAX(monthly_total) as max_spend
+[API]     FROM (
+[API]       SELECT 
+[API]         category_id,
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(amount) as monthly_total
+[API]       FROM transactions
+[API]       WHERE type = 'expense'
+[API]         AND date >= date('now', '-4 months', 'start of month')
+[API]         AND date < date('now', 'start of month')
+[API]       GROUP BY category_id, month
+[API]     )
+[API]     GROUP BY category_id
+[API]     HAVING COUNT(*) >= 2
+[API]   
+[API] 
+[API]     SELECT category_id, SUM(amount) as current_spend
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND strftime('%Y-%m', date) = '2026-02'
+[API]     GROUP BY category_id
+[API]   
+[API] 
+[API]     SELECT 
+[API]       description,
+[API]       AVG(amount) as avg_amount,
+[API]       MAX(amount) as latest_amount,
+[API]       COUNT(*) as frequency
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND date >= date('now', '-6 months')
+[API]     GROUP BY LOWER(TRIM(description))
+[API]     HAVING frequency >= 3
+[API]   
+[API] 
+[API]     SELECT 
+[API]       strftime('%Y-%m', date) as month,
+[API]       SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expenses,
+[API]       SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income
+[API]     FROM transactions
+[API]     WHERE date >= date('now', '-3 months', 'start of month')
+[API]     GROUP BY month
+[API]     ORDER BY month DESC
+[API]   
+[API] 
+[API]     SELECT * FROM goals 
+[API]     WHERE is_completed = 0 AND deadline IS NOT NULL
+[API]   
+[API] 
+[API]     SELECT 
+[API]       AVG(monthly_surplus) as avg_surplus
+[API]     FROM (
+[API]       SELECT 
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(CASE WHEN type = 'income' THEN amount ELSE -amount END) as monthly_surplus
+[API]       FROM transactions
+[API]       WHERE date >= date('now', '-3 months', 'start of month')
+[API]       GROUP BY month
+[API]     )
+[API]   
+[API] 
+[API]     SELECT SUM(amount) as saved FROM transactions 
+[API]     WHERE type = 'transfer' AND date = date('now')
+[API]   
+[API] 
+[API]     SELECT 
+[API]       category_id,
+[API]       AVG(monthly_total) as avg_spend,
+[API]       MAX(monthly_total) as max_spend
+[API]     FROM (
+[API]       SELECT 
+[API]         category_id,
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(amount) as monthly_total
+[API]       FROM transactions
+[API]       WHERE type = 'expense'
+[API]         AND date >= date('now', '-4 months', 'start of month')
+[API]         AND date < date('now', 'start of month')
+[API]       GROUP BY category_id, month
+[API]     )
+[API]     GROUP BY category_id
+[API]     HAVING COUNT(*) >= 2
+[API]   
+[API] 
+[API]     SELECT category_id, SUM(amount) as current_spend
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND strftime('%Y-%m', date) = '2026-02'
+[API]     GROUP BY category_id
+[API]   
+[API] 
+[API]     SELECT 
+[API]       description,
+[API]       AVG(amount) as avg_amount,
+[API]       MAX(amount) as latest_amount,
+[API]       COUNT(*) as frequency
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND date >= date('now', '-6 months')
+[API]     GROUP BY LOWER(TRIM(description))
+[API]     HAVING frequency >= 3
+[API]   
+[API] 
+[API]     SELECT 
+[API]       strftime('%Y-%m', date) as month,
+[API]       SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expenses,
+[API]       SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income
+[API]     FROM transactions
+[API]     WHERE date >= date('now', '-3 months', 'start of month')
+[API]     GROUP BY month
+[API]     ORDER BY month DESC
+[API]   
+[API] 
+[API]     SELECT * FROM goals 
+[API]     WHERE is_completed = 0 AND deadline IS NOT NULL
+[API]   
+[API] 
+[API]     SELECT 
+[API]       AVG(monthly_surplus) as avg_surplus
+[API]     FROM (
+[API]       SELECT 
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(CASE WHEN type = 'income' THEN amount ELSE -amount END) as monthly_surplus
+[API]       FROM transactions
+[API]       WHERE date >= date('now', '-3 months', 'start of month')
+[API]       GROUP BY month
+[API]     )
+[API]   
+[API] 
+[API]     SELECT SUM(amount) as saved FROM transactions 
+[API]     WHERE type = 'transfer' AND date = date('now')
+[API]   
+[API] 
+[API]     SELECT 
+[API]       category_id,
+[API]       AVG(monthly_total) as avg_spend,
+[API]       MAX(monthly_total) as max_spend
+[API]     FROM (
+[API]       SELECT 
+[API]         category_id,
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(amount) as monthly_total
+[API]       FROM transactions
+[API]       WHERE type = 'expense'
+[API]         AND date >= date('now', '-4 months', 'start of month')
+[API]         AND date < date('now', 'start of month')
+[API]       GROUP BY category_id, month
+[API]     )
+[API]     GROUP BY category_id
+[API]     HAVING COUNT(*) >= 2
+[API]   
+[API] 
+[API]     SELECT category_id, SUM(amount) as current_spend
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND strftime('%Y-%m', date) = '2026-02'
+[API]     GROUP BY category_id
+[API]   
+[API] 
+[API]     SELECT 
+[API]       description,
+[API]       AVG(amount) as avg_amount,
+[API]       MAX(amount) as latest_amount,
+[API]       COUNT(*) as frequency
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND date >= date('now', '-6 months')
+[API]     GROUP BY LOWER(TRIM(description))
+[API]     HAVING frequency >= 3
+[API]   
+[API] 
+[API]     SELECT 
+[API]       strftime('%Y-%m', date) as month,
+[API]       SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expenses,
+[API]       SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income
+[API]     FROM transactions
+[API]     WHERE date >= date('now', '-3 months', 'start of month')
+[API]     GROUP BY month
+[API]     ORDER BY month DESC
+[API]   
+[API] 
+[API]     SELECT * FROM goals 
+[API]     WHERE is_completed = 0 AND deadline IS NOT NULL
+[API]   
+[API] 
+[API]     SELECT 
+[API]       AVG(monthly_surplus) as avg_surplus
+[API]     FROM (
+[API]       SELECT 
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(CASE WHEN type = 'income' THEN amount ELSE -amount END) as monthly_surplus
+[API]       FROM transactions
+[API]       WHERE date >= date('now', '-3 months', 'start of month')
+[API]       GROUP BY month
+[API]     )
+[API]   
+[API] 
+[API]     SELECT SUM(amount) as saved FROM transactions 
+[API]     WHERE type = 'transfer' AND date = date('now')
+[API]   
+[API] 
+[API]     SELECT 
+[API]       category_id,
+[API]       AVG(monthly_total) as avg_spend,
+[API]       MAX(monthly_total) as max_spend
+[API]     FROM (
+[API]       SELECT 
+[API]         category_id,
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(amount) as monthly_total
+[API]       FROM transactions
+[API]       WHERE type = 'expense'
+[API]         AND date >= date('now', '-4 months', 'start of month')
+[API]         AND date < date('now', 'start of month')
+[API]       GROUP BY category_id, month
+[API]     )
+[API]     GROUP BY category_id
+[API]     HAVING COUNT(*) >= 2
+[API]   
+[API] 
+[API]     SELECT category_id, SUM(amount) as current_spend
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND strftime('%Y-%m', date) = '2026-02'
+[API]     GROUP BY category_id
+[API]   
+[API] 
+[API]     SELECT 
+[API]       description,
+[API]       AVG(amount) as avg_amount,
+[API]       MAX(amount) as latest_amount,
+[API]       COUNT(*) as frequency
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND date >= date('now', '-6 months')
+[API]     GROUP BY LOWER(TRIM(description))
+[API]     HAVING frequency >= 3
+[API]   
+[API] 
+[API]     SELECT 
+[API]       strftime('%Y-%m', date) as month,
+[API]       SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expenses,
+[API]       SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income
+[API]     FROM transactions
+[API]     WHERE date >= date('now', '-3 months', 'start of month')
+[API]     GROUP BY month
+[API]     ORDER BY month DESC
+[API]   
+[API] 
+[API]     SELECT * FROM goals 
+[API]     WHERE is_completed = 0 AND deadline IS NOT NULL
+[API]   
+[API] 
+[API]     SELECT 
+[API]       AVG(monthly_surplus) as avg_surplus
+[API]     FROM (
+[API]       SELECT 
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(CASE WHEN type = 'income' THEN amount ELSE -amount END) as monthly_surplus
+[API]       FROM transactions
+[API]       WHERE date >= date('now', '-3 months', 'start of month')
+[API]       GROUP BY month
+[API]     )
+[API]   
+[API] 
+[API]     SELECT SUM(amount) as saved FROM transactions 
+[API]     WHERE type = 'transfer' AND date = date('now')
+[API]   
+[API] SELECT t.*, c.name as category_name, c.icon as category_icon FROM transactions t LEFT JOIN categories c ON t.category_id = c.id ORDER BY t.date DESC
+[API] SELECT t.*, c.name as category_name, c.icon as category_icon FROM transactions t LEFT JOIN categories c ON t.category_id = c.id ORDER BY t.date DESC
+[API] 
+[API]     SELECT 
+[API]       c.id, 
+[API]       c.name, 
+[API]       c.icon,
+[API]       COALESCE(b.amount, 0) as budget_limit,
+[API]       COALESCE(SUM(t.amount), 0) as spent,
+[API]       (COALESCE(b.amount, 0) - COALESCE(SUM(t.amount), 0)) as remaining,
+[API]       CASE WHEN b.amount > 0 THEN 1 ELSE 0 END as has_budget
+[API]     FROM categories c
+[API]     LEFT JOIN budgets b ON c.id = b.category_id AND b.month_iso = '2026-02'
+[API]     LEFT JOIN transactions t ON c.id = t.category_id 
+[API]        AND strftime('%Y-%m', t.date) = '2026-02'
+[API]        AND t.type = 'expense'
+[API]     WHERE c.type = 'expense' AND c.is_hidden = 0
+[API]     GROUP BY c.id
+[API]     ORDER BY spent DESC
+[API]   
+[API] 
+[API]     SELECT 
+[API]       c.id, 
+[API]       c.name, 
+[API]       c.icon,
+[API]       COALESCE(b.amount, 0) as budget_limit,
+[API]       COALESCE(SUM(t.amount), 0) as spent,
+[API]       (COALESCE(b.amount, 0) - COALESCE(SUM(t.amount), 0)) as remaining,
+[API]       CASE WHEN b.amount > 0 THEN 1 ELSE 0 END as has_budget
+[API]     FROM categories c
+[API]     LEFT JOIN budgets b ON c.id = b.category_id AND b.month_iso = '2026-02'
+[API]     LEFT JOIN transactions t ON c.id = t.category_id 
+[API]        AND strftime('%Y-%m', t.date) = '2026-02'
+[API]        AND t.type = 'expense'
+[API]     WHERE c.type = 'expense' AND c.is_hidden = 0
+[API]     GROUP BY c.id
+[API]     ORDER BY spent DESC
+[API]   
+[API] 
+[API]     SELECT 
+[API]       category_id,
+[API]       AVG(monthly_total) as avg_spend,
+[API]       MAX(monthly_total) as max_spend
+[API]     FROM (
+[API]       SELECT 
+[API]         category_id,
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(amount) as monthly_total
+[API]       FROM transactions
+[API]       WHERE type = 'expense'
+[API]         AND date >= date('now', '-4 months', 'start of month')
+[API]         AND date < date('now', 'start of month')
+[API]       GROUP BY category_id, month
+[API]     )
+[API]     GROUP BY category_id
+[API]     HAVING COUNT(*) >= 2
+[API]   
+[API] 
+[API]     SELECT category_id, SUM(amount) as current_spend
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND strftime('%Y-%m', date) = '2026-02'
+[API]     GROUP BY category_id
+[API]   
+[API] 
+[API]     SELECT 
+[API]       description,
+[API]       AVG(amount) as avg_amount,
+[API]       MAX(amount) as latest_amount,
+[API]       COUNT(*) as frequency
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND date >= date('now', '-6 months')
+[API]     GROUP BY LOWER(TRIM(description))
+[API]     HAVING frequency >= 3
+[API]   
+[API] 
+[API]     SELECT 
+[API]       strftime('%Y-%m', date) as month,
+[API]       SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expenses,
+[API]       SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income
+[API]     FROM transactions
+[API]     WHERE date >= date('now', '-3 months', 'start of month')
+[API]     GROUP BY month
+[API]     ORDER BY month DESC
+[API]   
+[API] 
+[API]     SELECT * FROM goals 
+[API]     WHERE is_completed = 0 AND deadline IS NOT NULL
+[API]   
+[API] 
+[API]     SELECT 
+[API]       AVG(monthly_surplus) as avg_surplus
+[API]     FROM (
+[API]       SELECT 
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(CASE WHEN type = 'income' THEN amount ELSE -amount END) as monthly_surplus
+[API]       FROM transactions
+[API]       WHERE date >= date('now', '-3 months', 'start of month')
+[API]       GROUP BY month
+[API]     )
+[API]   
+[API] 
+[API]     SELECT SUM(amount) as saved FROM transactions 
+[API]     WHERE type = 'transfer' AND date = date('now')
+[API]   
+[API] 
+[API]     SELECT 
+[API]       category_id,
+[API]       AVG(monthly_total) as avg_spend,
+[API]       MAX(monthly_total) as max_spend
+[API]     FROM (
+[API]       SELECT 
+[API]         category_id,
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(amount) as monthly_total
+[API]       FROM transactions
+[API]       WHERE type = 'expense'
+[API]         AND date >= date('now', '-4 months', 'start of month')
+[API]         AND date < date('now', 'start of month')
+[API]       GROUP BY category_id, month
+[API]     )
+[API]     GROUP BY category_id
+[API]     HAVING COUNT(*) >= 2
+[API]   
+[API] 
+[API]     SELECT category_id, SUM(amount) as current_spend
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND strftime('%Y-%m', date) = '2026-02'
+[API]     GROUP BY category_id
+[API]   
+[API] 
+[API]     SELECT 
+[API]       description,
+[API]       AVG(amount) as avg_amount,
+[API]       MAX(amount) as latest_amount,
+[API]       COUNT(*) as frequency
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND date >= date('now', '-6 months')
+[API]     GROUP BY LOWER(TRIM(description))
+[API]     HAVING frequency >= 3
+[API]   
+[API] 
+[API]     SELECT 
+[API]       strftime('%Y-%m', date) as month,
+[API]       SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expenses,
+[API]       SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income
+[API]     FROM transactions
+[API]     WHERE date >= date('now', '-3 months', 'start of month')
+[API]     GROUP BY month
+[API]     ORDER BY month DESC
+[API]   
+[API] 
+[API]     SELECT * FROM goals 
+[API]     WHERE is_completed = 0 AND deadline IS NOT NULL
+[API]   
+[API] 
+[API]     SELECT 
+[API]       AVG(monthly_surplus) as avg_surplus
+[API]     FROM (
+[API]       SELECT 
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(CASE WHEN type = 'income' THEN amount ELSE -amount END) as monthly_surplus
+[API]       FROM transactions
+[API]       WHERE date >= date('now', '-3 months', 'start of month')
+[API]       GROUP BY month
+[API]     )
+[API]   
+[API] 
+[API]     SELECT SUM(amount) as saved FROM transactions 
+[API]     WHERE type = 'transfer' AND date = date('now')
+[API]   
+[API] 
+[API]     SELECT 
+[API]       g.*,
+[API]       COALESCE(SUM(CASE 
+[API]         WHEN t.type = 'transfer' THEN t.amount 
+[API]         WHEN t.type = 'expense' THEN -t.amount 
+[API]         ELSE 0 
+[API]       END), 0) as current_balance
+[API]     FROM goals g
+[API]     LEFT JOIN transactions t ON g.id = t.goal_id
+[API]     WHERE g.is_completed = 0
+[API]     GROUP BY g.id
+[API]     ORDER BY g.priority ASC, g.deadline ASC
+[API]   
+[API] 
+[API]     SELECT 
+[API]       g.*,
+[API]       COALESCE(SUM(CASE 
+[API]         WHEN t.type = 'transfer' THEN t.amount 
+[API]         WHEN t.type = 'expense' THEN -t.amount 
+[API]         ELSE 0 
+[API]       END), 0) as current_balance
+[API]     FROM goals g
+[API]     LEFT JOIN transactions t ON g.id = t.goal_id
+[API]     WHERE g.is_completed = 0
+[API]     GROUP BY g.id
+[API]     ORDER BY g.priority ASC, g.deadline ASC
+[API]   
+[API] SELECT * FROM settings
+[API] SELECT * FROM settings
+[API] SELECT * FROM categories ORDER BY name
+[API] SELECT * FROM categories ORDER BY name
+[API] SELECT SUM(amount) as total FROM transactions WHERE strftime('%Y-%m', date) = '2026-02' AND type = 'income'
+[API] SELECT SUM(amount) as total FROM transactions WHERE strftime('%Y-%m', date) = '2026-02' AND type = 'expense'
+[API] SELECT value FROM settings WHERE key = 'monthly_salary'
+[API] SELECT t.*, c.name as category_name, c.icon as category_icon FROM transactions t LEFT JOIN categories c ON t.category_id = c.id ORDER BY t.date DESC
+[API] SELECT * FROM categories ORDER BY name
+[API] SELECT SUM(amount) as total FROM transactions WHERE strftime('%Y-%m', date) = '2026-02' AND type = 'income'
+[API] SELECT SUM(amount) as total FROM transactions WHERE strftime('%Y-%m', date) = '2026-02' AND type = 'expense'
+[API] SELECT value FROM settings WHERE key = 'monthly_salary'
+[API] SELECT t.*, c.name as category_name, c.icon as category_icon FROM transactions t LEFT JOIN categories c ON t.category_id = c.id ORDER BY t.date DESC
+[API] SELECT * FROM categories ORDER BY name
+[API] 
+[API]     SELECT 
+[API]       category_id,
+[API]       AVG(monthly_total) as avg_spend,
+[API]       MAX(monthly_total) as max_spend
+[API]     FROM (
+[API]       SELECT 
+[API]         category_id,
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(amount) as monthly_total
+[API]       FROM transactions
+[API]       WHERE type = 'expense'
+[API]         AND date >= date('now', '-4 months', 'start of month')
+[API]         AND date < date('now', 'start of month')
+[API]       GROUP BY category_id, month
+[API]     )
+[API]     GROUP BY category_id
+[API]     HAVING COUNT(*) >= 2
+[API]   
+[API] 
+[API]     SELECT category_id, SUM(amount) as current_spend
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND strftime('%Y-%m', date) = '2026-02'
+[API]     GROUP BY category_id
+[API]   
+[API] 
+[API]     SELECT 
+[API]       description,
+[API]       AVG(amount) as avg_amount,
+[API]       MAX(amount) as latest_amount,
+[API]       COUNT(*) as frequency
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND date >= date('now', '-6 months')
+[API]     GROUP BY LOWER(TRIM(description))
+[API]     HAVING frequency >= 3
+[API]   
+[API] 
+[API]     SELECT 
+[API]       strftime('%Y-%m', date) as month,
+[API]       SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expenses,
+[API]       SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income
+[API]     FROM transactions
+[API]     WHERE date >= date('now', '-3 months', 'start of month')
+[API]     GROUP BY month
+[API]     ORDER BY month DESC
+[API]   
+[API] 
+[API]     SELECT * FROM goals 
+[API]     WHERE is_completed = 0 AND deadline IS NOT NULL
+[API]   
+[API] 
+[API]     SELECT 
+[API]       AVG(monthly_surplus) as avg_surplus
+[API]     FROM (
+[API]       SELECT 
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(CASE WHEN type = 'income' THEN amount ELSE -amount END) as monthly_surplus
+[API]       FROM transactions
+[API]       WHERE date >= date('now', '-3 months', 'start of month')
+[API]       GROUP BY month
+[API]     )
+[API]   
+[API] 
+[API]     SELECT SUM(amount) as saved FROM transactions 
+[API]     WHERE type = 'transfer' AND date = date('now')
+[API]   
+[API] 
+[API]     SELECT 
+[API]       category_id,
+[API]       AVG(monthly_total) as avg_spend,
+[API]       MAX(monthly_total) as max_spend
+[API]     FROM (
+[API]       SELECT 
+[API]         category_id,
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(amount) as monthly_total
+[API]       FROM transactions
+[API]       WHERE type = 'expense'
+[API]         AND date >= date('now', '-4 months', 'start of month')
+[API]         AND date < date('now', 'start of month')
+[API]       GROUP BY category_id, month
+[API]     )
+[API]     GROUP BY category_id
+[API]     HAVING COUNT(*) >= 2
+[API]   
+[API] 
+[API]     SELECT category_id, SUM(amount) as current_spend
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND strftime('%Y-%m', date) = '2026-02'
+[API]     GROUP BY category_id
+[API]   
+[API] 
+[API]     SELECT 
+[API]       description,
+[API]       AVG(amount) as avg_amount,
+[API]       MAX(amount) as latest_amount,
+[API]       COUNT(*) as frequency
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND date >= date('now', '-6 months')
+[API]     GROUP BY LOWER(TRIM(description))
+[API]     HAVING frequency >= 3
+[API]   
+[API] 
+[API]     SELECT 
+[API]       strftime('%Y-%m', date) as month,
+[API]       SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expenses,
+[API]       SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income
+[API]     FROM transactions
+[API]     WHERE date >= date('now', '-3 months', 'start of month')
+[API]     GROUP BY month
+[API]     ORDER BY month DESC
+[API]   
+[API] 
+[API]     SELECT * FROM goals 
+[API]     WHERE is_completed = 0 AND deadline IS NOT NULL
+[API]   
+[API] 
+[API]     SELECT 
+[API]       AVG(monthly_surplus) as avg_surplus
+[API]     FROM (
+[API]       SELECT 
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(CASE WHEN type = 'income' THEN amount ELSE -amount END) as monthly_surplus
+[API]       FROM transactions
+[API]       WHERE date >= date('now', '-3 months', 'start of month')
+[API]       GROUP BY month
+[API]     )
+[API]   
+[API] 
+[API]     SELECT SUM(amount) as saved FROM transactions 
+[API]     WHERE type = 'transfer' AND date = date('now')
+[API]   
+[API] 
+[API]     SELECT 
+[API]       category_id,
+[API]       AVG(monthly_total) as avg_spend,
+[API]       MAX(monthly_total) as max_spend
+[API]     FROM (
+[API]       SELECT 
+[API]         category_id,
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(amount) as monthly_total
+[API]       FROM transactions
+[API]       WHERE type = 'expense'
+[API]         AND date >= date('now', '-4 months', 'start of month')
+[API]         AND date < date('now', 'start of month')
+[API]       GROUP BY category_id, month
+[API]     )
+[API]     GROUP BY category_id
+[API]     HAVING COUNT(*) >= 2
+[API]   
+[API] 
+[API]     SELECT category_id, SUM(amount) as current_spend
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND strftime('%Y-%m', date) = '2026-02'
+[API]     GROUP BY category_id
+[API]   
+[API] 
+[API]     SELECT 
+[API]       description,
+[API]       AVG(amount) as avg_amount,
+[API]       MAX(amount) as latest_amount,
+[API]       COUNT(*) as frequency
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND date >= date('now', '-6 months')
+[API]     GROUP BY LOWER(TRIM(description))
+[API]     HAVING frequency >= 3
+[API]   
+[API] 
+[API]     SELECT 
+[API]       strftime('%Y-%m', date) as month,
+[API]       SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expenses,
+[API]       SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income
+[API]     FROM transactions
+[API]     WHERE date >= date('now', '-3 months', 'start of month')
+[API]     GROUP BY month
+[API]     ORDER BY month DESC
+[API]   
+[API] 
+[API]     SELECT * FROM goals 
+[API]     WHERE is_completed = 0 AND deadline IS NOT NULL
+[API]   
+[API] 
+[API]     SELECT 
+[API]       AVG(monthly_surplus) as avg_surplus
+[API]     FROM (
+[API]       SELECT 
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(CASE WHEN type = 'income' THEN amount ELSE -amount END) as monthly_surplus
+[API]       FROM transactions
+[API]       WHERE date >= date('now', '-3 months', 'start of month')
+[API]       GROUP BY month
+[API]     )
+[API]   
+[API] 
+[API]     SELECT SUM(amount) as saved FROM transactions 
+[API]     WHERE type = 'transfer' AND date = date('now')
+[API]   
+[API] 
+[API]     SELECT 
+[API]       category_id,
+[API]       AVG(monthly_total) as avg_spend,
+[API]       MAX(monthly_total) as max_spend
+[API]     FROM (
+[API]       SELECT 
+[API]         category_id,
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(amount) as monthly_total
+[API]       FROM transactions
+[API]       WHERE type = 'expense'
+[API]         AND date >= date('now', '-4 months', 'start of month')
+[API]         AND date < date('now', 'start of month')
+[API]       GROUP BY category_id, month
+[API]     )
+[API]     GROUP BY category_id
+[API]     HAVING COUNT(*) >= 2
+[API]   
+[API] 
+[API]     SELECT category_id, SUM(amount) as current_spend
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND strftime('%Y-%m', date) = '2026-02'
+[API]     GROUP BY category_id
+[API]   
+[API] 
+[API]     SELECT 
+[API]       description,
+[API]       AVG(amount) as avg_amount,
+[API]       MAX(amount) as latest_amount,
+[API]       COUNT(*) as frequency
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND date >= date('now', '-6 months')
+[API]     GROUP BY LOWER(TRIM(description))
+[API]     HAVING frequency >= 3
+[API]   
+[API] 
+[API]     SELECT 
+[API]       strftime('%Y-%m', date) as month,
+[API]       SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expenses,
+[API]       SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income
+[API]     FROM transactions
+[API]     WHERE date >= date('now', '-3 months', 'start of month')
+[API]     GROUP BY month
+[API]     ORDER BY month DESC
+[API]   
+[API] 
+[API]     SELECT * FROM goals 
+[API]     WHERE is_completed = 0 AND deadline IS NOT NULL
+[API]   
+[API] 
+[API]     SELECT 
+[API]       AVG(monthly_surplus) as avg_surplus
+[API]     FROM (
+[API]       SELECT 
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(CASE WHEN type = 'income' THEN amount ELSE -amount END) as monthly_surplus
+[API]       FROM transactions
+[API]       WHERE date >= date('now', '-3 months', 'start of month')
+[API]       GROUP BY month
+[API]     )
+[API]   
+[API] 
+[API]     SELECT SUM(amount) as saved FROM transactions 
+[API]     WHERE type = 'transfer' AND date = date('now')
+[API]   
+[CLIENT] 6:43:00 PM [vite] (client) hmr update /src/index.css
+[API] SELECT * FROM categories ORDER BY name
+[API] SELECT SUM(amount) as total FROM transactions WHERE strftime('%Y-%m', date) = '2026-02' AND type = 'income'
+[API] SELECT SUM(amount) as total FROM transactions WHERE strftime('%Y-%m', date) = '2026-02' AND type = 'expense'
+[API] SELECT value FROM settings WHERE key = 'monthly_salary'
+[API] SELECT t.*, c.name as category_name, c.icon as category_icon FROM transactions t LEFT JOIN categories c ON t.category_id = c.id ORDER BY t.date DESC
+[API] SELECT * FROM categories ORDER BY name
+[API] SELECT SUM(amount) as total FROM transactions WHERE strftime('%Y-%m', date) = '2026-02' AND type = 'income'
+[API] SELECT SUM(amount) as total FROM transactions WHERE strftime('%Y-%m', date) = '2026-02' AND type = 'expense'
+[API] SELECT value FROM settings WHERE key = 'monthly_salary'
+[API] SELECT t.*, c.name as category_name, c.icon as category_icon FROM transactions t LEFT JOIN categories c ON t.category_id = c.id ORDER BY t.date DESC
+[API] 
+[API]     SELECT 
+[API]       category_id,
+[API]       AVG(monthly_total) as avg_spend,
+[API]       MAX(monthly_total) as max_spend
+[API]     FROM (
+[API]       SELECT 
+[API]         category_id,
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(amount) as monthly_total
+[API]       FROM transactions
+[API]       WHERE type = 'expense'
+[API]         AND date >= date('now', '-4 months', 'start of month')
+[API]         AND date < date('now', 'start of month')
+[API]       GROUP BY category_id, month
+[API]     )
+[API]     GROUP BY category_id
+[API]     HAVING COUNT(*) >= 2
+[API]   
+[API] 
+[API]     SELECT category_id, SUM(amount) as current_spend
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND strftime('%Y-%m', date) = '2026-02'
+[API]     GROUP BY category_id
+[API]   
+[API] 
+[API]     SELECT 
+[API]       description,
+[API]       AVG(amount) as avg_amount,
+[API]       MAX(amount) as latest_amount,
+[API]       COUNT(*) as frequency
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND date >= date('now', '-6 months')
+[API]     GROUP BY LOWER(TRIM(description))
+[API]     HAVING frequency >= 3
+[API]   
+[API] 
+[API]     SELECT 
+[API]       strftime('%Y-%m', date) as month,
+[API]       SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expenses,
+[API]       SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income
+[API]     FROM transactions
+[API]     WHERE date >= date('now', '-3 months', 'start of month')
+[API]     GROUP BY month
+[API]     ORDER BY month DESC
+[API]   
+[API] 
+[API]     SELECT * FROM goals 
+[API]     WHERE is_completed = 0 AND deadline IS NOT NULL
+[API]   
+[API] 
+[API]     SELECT 
+[API]       AVG(monthly_surplus) as avg_surplus
+[API]     FROM (
+[API]       SELECT 
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(CASE WHEN type = 'income' THEN amount ELSE -amount END) as monthly_surplus
+[API]       FROM transactions
+[API]       WHERE date >= date('now', '-3 months', 'start of month')
+[API]       GROUP BY month
+[API]     )
+[API]   
+[API] 
+[API]     SELECT SUM(amount) as saved FROM transactions 
+[API]     WHERE type = 'transfer' AND date = date('now')
+[API]   
+[API] 
+[API]     SELECT 
+[API]       category_id,
+[API]       AVG(monthly_total) as avg_spend,
+[API]       MAX(monthly_total) as max_spend
+[API]     FROM (
+[API]       SELECT 
+[API]         category_id,
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(amount) as monthly_total
+[API]       FROM transactions
+[API]       WHERE type = 'expense'
+[API]         AND date >= date('now', '-4 months', 'start of month')
+[API]         AND date < date('now', 'start of month')
+[API]       GROUP BY category_id, month
+[API]     )
+[API]     GROUP BY category_id
+[API]     HAVING COUNT(*) >= 2
+[API]   
+[API] 
+[API]     SELECT category_id, SUM(amount) as current_spend
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND strftime('%Y-%m', date) = '2026-02'
+[API]     GROUP BY category_id
+[API]   
+[API] 
+[API]     SELECT 
+[API]       description,
+[API]       AVG(amount) as avg_amount,
+[API]       MAX(amount) as latest_amount,
+[API]       COUNT(*) as frequency
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND date >= date('now', '-6 months')
+[API]     GROUP BY LOWER(TRIM(description))
+[API]     HAVING frequency >= 3
+[API]   
+[API] 
+[API]     SELECT 
+[API]       strftime('%Y-%m', date) as month,
+[API]       SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expenses,
+[API]       SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income
+[API]     FROM transactions
+[API]     WHERE date >= date('now', '-3 months', 'start of month')
+[API]     GROUP BY month
+[API]     ORDER BY month DESC
+[API]   
+[API] 
+[API]     SELECT * FROM goals 
+[API]     WHERE is_completed = 0 AND deadline IS NOT NULL
+[API]   
+[API] 
+[API]     SELECT 
+[API]       AVG(monthly_surplus) as avg_surplus
+[API]     FROM (
+[API]       SELECT 
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(CASE WHEN type = 'income' THEN amount ELSE -amount END) as monthly_surplus
+[API]       FROM transactions
+[API]       WHERE date >= date('now', '-3 months', 'start of month')
+[API]       GROUP BY month
+[API]     )
+[API]   
+[API] 
+[API]     SELECT SUM(amount) as saved FROM transactions 
+[API]     WHERE type = 'transfer' AND date = date('now')
+[API]   
+[CLIENT] 6:43:50 PM [vite] (client) hmr update /src/features/insights/InsightsPage.jsx
+[CLIENT] 6:44:13 PM [vite] (client) hmr update /src/features/insights/InsightsPage.css
+[CLIENT] 6:44:45 PM [vite] (client) hmr update /src/components/Layout.jsx
+[API] 
+[API]     SELECT 
+[API]       category_id,
+[API]       AVG(monthly_total) as avg_spend,
+[API]       MAX(monthly_total) as max_spend
+[API]     FROM (
+[API]       SELECT 
+[API]         category_id,
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(amount) as monthly_total
+[API]       FROM transactions
+[API]       WHERE type = 'expense'
+[API]         AND date >= date('now', '-4 months', 'start of month')
+[API]         AND date < date('now', 'start of month')
+[API]       GROUP BY category_id, month
+[API]     )
+[API]     GROUP BY category_id
+[API]     HAVING COUNT(*) >= 2
+[API]   
+[API] 
+[API]     SELECT category_id, SUM(amount) as current_spend
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND strftime('%Y-%m', date) = '2026-02'
+[API]     GROUP BY category_id
+[API]   
+[API] 
+[API]     SELECT 
+[API]       description,
+[API]       AVG(amount) as avg_amount,
+[API]       MAX(amount) as latest_amount,
+[API]       COUNT(*) as frequency
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND date >= date('now', '-6 months')
+[API]     GROUP BY LOWER(TRIM(description))
+[API]     HAVING frequency >= 3
+[API]   
+[API] 
+[API]     SELECT 
+[API]       strftime('%Y-%m', date) as month,
+[API]       SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expenses,
+[API]       SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income
+[API]     FROM transactions
+[API]     WHERE date >= date('now', '-3 months', 'start of month')
+[API]     GROUP BY month
+[API]     ORDER BY month DESC
+[API]   
+[API] 
+[API]     SELECT * FROM goals 
+[API]     WHERE is_completed = 0 AND deadline IS NOT NULL
+[API]   
+[API] 
+[API]     SELECT 
+[API]       AVG(monthly_surplus) as avg_surplus
+[API]     FROM (
+[API]       SELECT 
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(CASE WHEN type = 'income' THEN amount ELSE -amount END) as monthly_surplus
+[API]       FROM transactions
+[API]       WHERE date >= date('now', '-3 months', 'start of month')
+[API]       GROUP BY month
+[API]     )
+[API]   
+[API] 
+[API]     SELECT SUM(amount) as saved FROM transactions 
+[API]     WHERE type = 'transfer' AND date = date('now')
+[API]   
+[API] 
+[API]     SELECT 
+[API]       category_id,
+[API]       AVG(monthly_total) as avg_spend,
+[API]       MAX(monthly_total) as max_spend
+[API]     FROM (
+[API]       SELECT 
+[API]         category_id,
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(amount) as monthly_total
+[API]       FROM transactions
+[API]       WHERE type = 'expense'
+[API]         AND date >= date('now', '-4 months', 'start of month')
+[API]         AND date < date('now', 'start of month')
+[API]       GROUP BY category_id, month
+[API]     )
+[API]     GROUP BY category_id
+[API]     HAVING COUNT(*) >= 2
+[API]   
+[API] 
+[API]     SELECT category_id, SUM(amount) as current_spend
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND strftime('%Y-%m', date) = '2026-02'
+[API]     GROUP BY category_id
+[API]   
+[API] 
+[API]     SELECT 
+[API]       description,
+[API]       AVG(amount) as avg_amount,
+[API]       MAX(amount) as latest_amount,
+[API]       COUNT(*) as frequency
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND date >= date('now', '-6 months')
+[API]     GROUP BY LOWER(TRIM(description))
+[API]     HAVING frequency >= 3
+[API]   
+[API] 
+[API]     SELECT 
+[API]       strftime('%Y-%m', date) as month,
+[API]       SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expenses,
+[API]       SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income
+[API]     FROM transactions
+[API]     WHERE date >= date('now', '-3 months', 'start of month')
+[API]     GROUP BY month
+[API]     ORDER BY month DESC
+[API]   
+[API] 
+[API]     SELECT * FROM goals 
+[API]     WHERE is_completed = 0 AND deadline IS NOT NULL
+[API]   
+[API] 
+[API]     SELECT 
+[API]       AVG(monthly_surplus) as avg_surplus
+[API]     FROM (
+[API]       SELECT 
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(CASE WHEN type = 'income' THEN amount ELSE -amount END) as monthly_surplus
+[API]       FROM transactions
+[API]       WHERE date >= date('now', '-3 months', 'start of month')
+[API]       GROUP BY month
+[API]     )
+[API]   
+[API] 
+[API]     SELECT SUM(amount) as saved FROM transactions 
+[API]     WHERE type = 'transfer' AND date = date('now')
+[API]   
+[API] 
+[API]     SELECT 
+[API]       category_id,
+[API]       AVG(monthly_total) as avg_spend,
+[API]       MAX(monthly_total) as max_spend
+[API]     FROM (
+[API]       SELECT 
+[API]         category_id,
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(amount) as monthly_total
+[API]       FROM transactions
+[API]       WHERE type = 'expense'
+[API]         AND date >= date('now', '-4 months', 'start of month')
+[API]         AND date < date('now', 'start of month')
+[API]       GROUP BY category_id, month
+[API]     )
+[API]     GROUP BY category_id
+[API]     HAVING COUNT(*) >= 2
+[API]   
+[API] 
+[API]     SELECT category_id, SUM(amount) as current_spend
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND strftime('%Y-%m', date) = '2026-02'
+[API]     GROUP BY category_id
+[API]   
+[API] 
+[API]     SELECT 
+[API]       description,
+[API]       AVG(amount) as avg_amount,
+[API]       MAX(amount) as latest_amount,
+[API]       COUNT(*) as frequency
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND date >= date('now', '-6 months')
+[API]     GROUP BY LOWER(TRIM(description))
+[API]     HAVING frequency >= 3
+[API]   
+[API] 
+[API]     SELECT 
+[API]       strftime('%Y-%m', date) as month,
+[API]       SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expenses,
+[API]       SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income
+[API]     FROM transactions
+[API]     WHERE date >= date('now', '-3 months', 'start of month')
+[API]     GROUP BY month
+[API]     ORDER BY month DESC
+[API]   
+[API] 
+[API]     SELECT * FROM goals 
+[API]     WHERE is_completed = 0 AND deadline IS NOT NULL
+[API]   
+[API] 
+[API]     SELECT 
+[API]       AVG(monthly_surplus) as avg_surplus
+[API]     FROM (
+[API]       SELECT 
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(CASE WHEN type = 'income' THEN amount ELSE -amount END) as monthly_surplus
+[API]       FROM transactions
+[API]       WHERE date >= date('now', '-3 months', 'start of month')
+[API]       GROUP BY month
+[API]     )
+[API]   
+[API] 
+[API]     SELECT SUM(amount) as saved FROM transactions 
+[API]     WHERE type = 'transfer' AND date = date('now')
+[API]   
+[API] 
+[API]     SELECT 
+[API]       category_id,
+[API]       AVG(monthly_total) as avg_spend,
+[API]       MAX(monthly_total) as max_spend
+[API]     FROM (
+[API]       SELECT 
+[API]         category_id,
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(amount) as monthly_total
+[API]       FROM transactions
+[API]       WHERE type = 'expense'
+[API]         AND date >= date('now', '-4 months', 'start of month')
+[API]         AND date < date('now', 'start of month')
+[API]       GROUP BY category_id, month
+[API]     )
+[API]     GROUP BY category_id
+[API]     HAVING COUNT(*) >= 2
+[API]   
+[API] 
+[API]     SELECT category_id, SUM(amount) as current_spend
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND strftime('%Y-%m', date) = '2026-02'
+[API]     GROUP BY category_id
+[API]   
+[API] 
+[API]     SELECT 
+[API]       description,
+[API]       AVG(amount) as avg_amount,
+[API]       MAX(amount) as latest_amount,
+[API]       COUNT(*) as frequency
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND date >= date('now', '-6 months')
+[API]     GROUP BY LOWER(TRIM(description))
+[API]     HAVING frequency >= 3
+[API]   
+[API] 
+[API]     SELECT 
+[API]       strftime('%Y-%m', date) as month,
+[API]       SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expenses,
+[API]       SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income
+[API]     FROM transactions
+[API]     WHERE date >= date('now', '-3 months', 'start of month')
+[API]     GROUP BY month
+[API]     ORDER BY month DESC
+[API]   
+[API] 
+[API]     SELECT * FROM goals 
+[API]     WHERE is_completed = 0 AND deadline IS NOT NULL
+[API]   
+[API] 
+[API]     SELECT 
+[API]       AVG(monthly_surplus) as avg_surplus
+[API]     FROM (
+[API]       SELECT 
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(CASE WHEN type = 'income' THEN amount ELSE -amount END) as monthly_surplus
+[API]       FROM transactions
+[API]       WHERE date >= date('now', '-3 months', 'start of month')
+[API]       GROUP BY month
+[API]     )
+[API]   
+[API] 
+[API]     SELECT SUM(amount) as saved FROM transactions 
+[API]     WHERE type = 'transfer' AND date = date('now')
+[API]   
+[API] SELECT SUM(amount) as total FROM transactions WHERE strftime('%Y-%m', date) = '2026-02' AND type = 'income'
+[API] SELECT SUM(amount) as total FROM transactions WHERE strftime('%Y-%m', date) = '2026-02' AND type = 'expense'
+[API] SELECT value FROM settings WHERE key = 'monthly_salary'
+[API] SELECT t.*, c.name as category_name, c.icon as category_icon FROM transactions t LEFT JOIN categories c ON t.category_id = c.id ORDER BY t.date DESC
+[API] SELECT * FROM categories ORDER BY name
+[API] SELECT SUM(amount) as total FROM transactions WHERE strftime('%Y-%m', date) = '2026-02' AND type = 'income'
+[API] SELECT SUM(amount) as total FROM transactions WHERE strftime('%Y-%m', date) = '2026-02' AND type = 'expense'
+[API] SELECT value FROM settings WHERE key = 'monthly_salary'
+[API] SELECT t.*, c.name as category_name, c.icon as category_icon FROM transactions t LEFT JOIN categories c ON t.category_id = c.id ORDER BY t.date DESC
+[API] SELECT * FROM categories ORDER BY name
+[API] 
+[API]     SELECT 
+[API]       category_id,
+[API]       AVG(monthly_total) as avg_spend,
+[API]       MAX(monthly_total) as max_spend
+[API]     FROM (
+[API]       SELECT 
+[API]         category_id,
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(amount) as monthly_total
+[API]       FROM transactions
+[API]       WHERE type = 'expense'
+[API]         AND date >= date('now', '-4 months', 'start of month')
+[API]         AND date < date('now', 'start of month')
+[API]       GROUP BY category_id, month
+[API]     )
+[API]     GROUP BY category_id
+[API]     HAVING COUNT(*) >= 2
+[API]   
+[API] 
+[API]     SELECT category_id, SUM(amount) as current_spend
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND strftime('%Y-%m', date) = '2026-02'
+[API]     GROUP BY category_id
+[API]   
+[API] 
+[API]     SELECT 
+[API]       description,
+[API]       AVG(amount) as avg_amount,
+[API]       MAX(amount) as latest_amount,
+[API]       COUNT(*) as frequency
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND date >= date('now', '-6 months')
+[API]     GROUP BY LOWER(TRIM(description))
+[API]     HAVING frequency >= 3
+[API]   
+[API] 
+[API]     SELECT 
+[API]       strftime('%Y-%m', date) as month,
+[API]       SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expenses,
+[API]       SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income
+[API]     FROM transactions
+[API]     WHERE date >= date('now', '-3 months', 'start of month')
+[API]     GROUP BY month
+[API]     ORDER BY month DESC
+[API]   
+[API] 
+[API]     SELECT * FROM goals 
+[API]     WHERE is_completed = 0 AND deadline IS NOT NULL
+[API]   
+[API] 
+[API]     SELECT 
+[API]       AVG(monthly_surplus) as avg_surplus
+[API]     FROM (
+[API]       SELECT 
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(CASE WHEN type = 'income' THEN amount ELSE -amount END) as monthly_surplus
+[API]       FROM transactions
+[API]       WHERE date >= date('now', '-3 months', 'start of month')
+[API]       GROUP BY month
+[API]     )
+[API]   
+[API] 
+[API]     SELECT SUM(amount) as saved FROM transactions 
+[API]     WHERE type = 'transfer' AND date = date('now')
+[API]   
+[API] 
+[API]     SELECT 
+[API]       category_id,
+[API]       AVG(monthly_total) as avg_spend,
+[API]       MAX(monthly_total) as max_spend
+[API]     FROM (
+[API]       SELECT 
+[API]         category_id,
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(amount) as monthly_total
+[API]       FROM transactions
+[API]       WHERE type = 'expense'
+[API]         AND date >= date('now', '-4 months', 'start of month')
+[API]         AND date < date('now', 'start of month')
+[API]       GROUP BY category_id, month
+[API]     )
+[API]     GROUP BY category_id
+[API]     HAVING COUNT(*) >= 2
+[API]   
+[API] 
+[API]     SELECT category_id, SUM(amount) as current_spend
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND strftime('%Y-%m', date) = '2026-02'
+[API]     GROUP BY category_id
+[API]   
+[API] 
+[API]     SELECT 
+[API]       description,
+[API]       AVG(amount) as avg_amount,
+[API]       MAX(amount) as latest_amount,
+[API]       COUNT(*) as frequency
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND date >= date('now', '-6 months')
+[API]     GROUP BY LOWER(TRIM(description))
+[API]     HAVING frequency >= 3
+[API]   
+[API] 
+[API]     SELECT 
+[API]       strftime('%Y-%m', date) as month,
+[API]       SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expenses,
+[API]       SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income
+[API]     FROM transactions
+[API]     WHERE date >= date('now', '-3 months', 'start of month')
+[API]     GROUP BY month
+[API]     ORDER BY month DESC
+[API]   
+[API] 
+[API]     SELECT * FROM goals 
+[API]     WHERE is_completed = 0 AND deadline IS NOT NULL
+[API]   
+[API] 
+[API]     SELECT 
+[API]       AVG(monthly_surplus) as avg_surplus
+[API]     FROM (
+[API]       SELECT 
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(CASE WHEN type = 'income' THEN amount ELSE -amount END) as monthly_surplus
+[API]       FROM transactions
+[API]       WHERE date >= date('now', '-3 months', 'start of month')
+[API]       GROUP BY month
+[API]     )
+[API]   
+[API] 
+[API]     SELECT SUM(amount) as saved FROM transactions 
+[API]     WHERE type = 'transfer' AND date = date('now')
+[API]   
+[API] 
+[API]     SELECT 
+[API]       category_id,
+[API]       AVG(monthly_total) as avg_spend,
+[API]       MAX(monthly_total) as max_spend
+[API]     FROM (
+[API]       SELECT 
+[API]         category_id,
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(amount) as monthly_total
+[API]       FROM transactions
+[API]       WHERE type = 'expense'
+[API]         AND date >= date('now', '-4 months', 'start of month')
+[API]         AND date < date('now', 'start of month')
+[API]       GROUP BY category_id, month
+[API]     )
+[API]     GROUP BY category_id
+[API]     HAVING COUNT(*) >= 2
+[API]   
+[API] 
+[API]     SELECT category_id, SUM(amount) as current_spend
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND strftime('%Y-%m', date) = '2026-02'
+[API]     GROUP BY category_id
+[API]   
+[API] 
+[API]     SELECT 
+[API]       description,
+[API]       AVG(amount) as avg_amount,
+[API]       MAX(amount) as latest_amount,
+[API]       COUNT(*) as frequency
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND date >= date('now', '-6 months')
+[API]     GROUP BY LOWER(TRIM(description))
+[API]     HAVING frequency >= 3
+[API]   
+[API] 
+[API]     SELECT 
+[API]       strftime('%Y-%m', date) as month,
+[API]       SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expenses,
+[API]       SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income
+[API]     FROM transactions
+[API]     WHERE date >= date('now', '-3 months', 'start of month')
+[API]     GROUP BY month
+[API]     ORDER BY month DESC
+[API]   
+[API] 
+[API]     SELECT * FROM goals 
+[API]     WHERE is_completed = 0 AND deadline IS NOT NULL
+[API]   
+[API] 
+[API]     SELECT 
+[API]       AVG(monthly_surplus) as avg_surplus
+[API]     FROM (
+[API]       SELECT 
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(CASE WHEN type = 'income' THEN amount ELSE -amount END) as monthly_surplus
+[API]       FROM transactions
+[API]       WHERE date >= date('now', '-3 months', 'start of month')
+[API]       GROUP BY month
+[API]     )
+[API]   
+[API] 
+[API]     SELECT SUM(amount) as saved FROM transactions 
+[API]     WHERE type = 'transfer' AND date = date('now')
+[API]   
+[API] 
+[API]     SELECT 
+[API]       category_id,
+[API]       AVG(monthly_total) as avg_spend,
+[API]       MAX(monthly_total) as max_spend
+[API]     FROM (
+[API]       SELECT 
+[API]         category_id,
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(amount) as monthly_total
+[API]       FROM transactions
+[API]       WHERE type = 'expense'
+[API]         AND date >= date('now', '-4 months', 'start of month')
+[API]         AND date < date('now', 'start of month')
+[API]       GROUP BY category_id, month
+[API]     )
+[API]     GROUP BY category_id
+[API]     HAVING COUNT(*) >= 2
+[API]   
+[API] 
+[API]     SELECT category_id, SUM(amount) as current_spend
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND strftime('%Y-%m', date) = '2026-02'
+[API]     GROUP BY category_id
+[API]   
+[API] 
+[API]     SELECT 
+[API]       description,
+[API]       AVG(amount) as avg_amount,
+[API]       MAX(amount) as latest_amount,
+[API]       COUNT(*) as frequency
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND date >= date('now', '-6 months')
+[API]     GROUP BY LOWER(TRIM(description))
+[API]     HAVING frequency >= 3
+[API]   
+[API] 
+[API]     SELECT 
+[API]       strftime('%Y-%m', date) as month,
+[API]       SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expenses,
+[API]       SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income
+[API]     FROM transactions
+[API]     WHERE date >= date('now', '-3 months', 'start of month')
+[API]     GROUP BY month
+[API]     ORDER BY month DESC
+[API]   
+[API] 
+[API]     SELECT * FROM goals 
+[API]     WHERE is_completed = 0 AND deadline IS NOT NULL
+[API]   
+[API] 
+[API]     SELECT 
+[API]       AVG(monthly_surplus) as avg_surplus
+[API]     FROM (
+[API]       SELECT 
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(CASE WHEN type = 'income' THEN amount ELSE -amount END) as monthly_surplus
+[API]       FROM transactions
+[API]       WHERE date >= date('now', '-3 months', 'start of month')
+[API]       GROUP BY month
+[API]     )
+[API]   
+[API] 
+[API]     SELECT SUM(amount) as saved FROM transactions 
+[API]     WHERE type = 'transfer' AND date = date('now')
+[API]   
+[CLIENT] 6:48:08 PM [vite] (client) hmr update /src/components/Layout.jsx
+[API] 
+[API]     SELECT 
+[API]       category_id,
+[API]       AVG(monthly_total) as avg_spend,
+[API]       MAX(monthly_total) as max_spend
+[API]     FROM (
+[API]       SELECT 
+[API]         category_id,
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(amount) as monthly_total
+[API]       FROM transactions
+[API]       WHERE type = 'expense'
+[API]         AND date >= date('now', '-4 months', 'start of month')
+[API]         AND date < date('now', 'start of month')
+[API]       GROUP BY category_id, month
+[API]     )
+[API]     GROUP BY category_id
+[API]     HAVING COUNT(*) >= 2
+[API]   
+[API] 
+[API]     SELECT category_id, SUM(amount) as current_spend
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND strftime('%Y-%m', date) = '2026-02'
+[API]     GROUP BY category_id
+[API]   
+[API] 
+[API]     SELECT 
+[API]       description,
+[API]       AVG(amount) as avg_amount,
+[API]       MAX(amount) as latest_amount,
+[API]       COUNT(*) as frequency
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND date >= date('now', '-6 months')
+[API]     GROUP BY LOWER(TRIM(description))
+[API]     HAVING frequency >= 3
+[API]   
+[API] 
+[API]     SELECT 
+[API]       strftime('%Y-%m', date) as month,
+[API]       SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expenses,
+[API]       SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income
+[API]     FROM transactions
+[API]     WHERE date >= date('now', '-3 months', 'start of month')
+[API]     GROUP BY month
+[API]     ORDER BY month DESC
+[API]   
+[API] 
+[API]     SELECT * FROM goals 
+[API]     WHERE is_completed = 0 AND deadline IS NOT NULL
+[API]   
+[API] 
+[API]     SELECT 
+[API]       AVG(monthly_surplus) as avg_surplus
+[API]     FROM (
+[API]       SELECT 
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(CASE WHEN type = 'income' THEN amount ELSE -amount END) as monthly_surplus
+[API]       FROM transactions
+[API]       WHERE date >= date('now', '-3 months', 'start of month')
+[API]       GROUP BY month
+[API]     )
+[API]   
+[API] 
+[API]     SELECT SUM(amount) as saved FROM transactions 
+[API]     WHERE type = 'transfer' AND date = date('now')
+[API]   
+[API] 
+[API]     SELECT 
+[API]       category_id,
+[API]       AVG(monthly_total) as avg_spend,
+[API]       MAX(monthly_total) as max_spend
+[API]     FROM (
+[API]       SELECT 
+[API]         category_id,
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(amount) as monthly_total
+[API]       FROM transactions
+[API]       WHERE type = 'expense'
+[API]         AND date >= date('now', '-4 months', 'start of month')
+[API]         AND date < date('now', 'start of month')
+[API]       GROUP BY category_id, month
+[API]     )
+[API]     GROUP BY category_id
+[API]     HAVING COUNT(*) >= 2
+[API]   
+[API] 
+[API]     SELECT category_id, SUM(amount) as current_spend
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND strftime('%Y-%m', date) = '2026-02'
+[API]     GROUP BY category_id
+[API]   
+[API] 
+[API]     SELECT 
+[API]       description,
+[API]       AVG(amount) as avg_amount,
+[API]       MAX(amount) as latest_amount,
+[API]       COUNT(*) as frequency
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND date >= date('now', '-6 months')
+[API]     GROUP BY LOWER(TRIM(description))
+[API]     HAVING frequency >= 3
+[API]   
+[API] 
+[API]     SELECT 
+[API]       strftime('%Y-%m', date) as month,
+[API]       SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expenses,
+[API]       SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income
+[API]     FROM transactions
+[API]     WHERE date >= date('now', '-3 months', 'start of month')
+[API]     GROUP BY month
+[API]     ORDER BY month DESC
+[API]   
+[API] 
+[API]     SELECT * FROM goals 
+[API]     WHERE is_completed = 0 AND deadline IS NOT NULL
+[API]   
+[API] 
+[API]     SELECT 
+[API]       AVG(monthly_surplus) as avg_surplus
+[API]     FROM (
+[API]       SELECT 
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(CASE WHEN type = 'income' THEN amount ELSE -amount END) as monthly_surplus
+[API]       FROM transactions
+[API]       WHERE date >= date('now', '-3 months', 'start of month')
+[API]       GROUP BY month
+[API]     )
+[API]   
+[API] 
+[API]     SELECT SUM(amount) as saved FROM transactions 
+[API]     WHERE type = 'transfer' AND date = date('now')
+[API]   
+[API] 
+[API]     SELECT 
+[API]       category_id,
+[API]       AVG(monthly_total) as avg_spend,
+[API]       MAX(monthly_total) as max_spend
+[API]     FROM (
+[API]       SELECT 
+[API]         category_id,
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(amount) as monthly_total
+[API]       FROM transactions
+[API]       WHERE type = 'expense'
+[API]         AND date >= date('now', '-4 months', 'start of month')
+[API]         AND date < date('now', 'start of month')
+[API]       GROUP BY category_id, month
+[API]     )
+[API]     GROUP BY category_id
+[API]     HAVING COUNT(*) >= 2
+[API]   
+[API] 
+[API]     SELECT category_id, SUM(amount) as current_spend
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND strftime('%Y-%m', date) = '2026-02'
+[API]     GROUP BY category_id
+[API]   
+[API] 
+[API]     SELECT 
+[API]       description,
+[API]       AVG(amount) as avg_amount,
+[API]       MAX(amount) as latest_amount,
+[API]       COUNT(*) as frequency
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND date >= date('now', '-6 months')
+[API]     GROUP BY LOWER(TRIM(description))
+[API]     HAVING frequency >= 3
+[API]   
+[API] 
+[API]     SELECT 
+[API]       strftime('%Y-%m', date) as month,
+[API]       SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expenses,
+[API]       SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income
+[API]     FROM transactions
+[API]     WHERE date >= date('now', '-3 months', 'start of month')
+[API]     GROUP BY month
+[API]     ORDER BY month DESC
+[API]   
+[API] 
+[API]     SELECT * FROM goals 
+[API]     WHERE is_completed = 0 AND deadline IS NOT NULL
+[API]   
+[API] 
+[API]     SELECT 
+[API]       AVG(monthly_surplus) as avg_surplus
+[API]     FROM (
+[API]       SELECT 
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(CASE WHEN type = 'income' THEN amount ELSE -amount END) as monthly_surplus
+[API]       FROM transactions
+[API]       WHERE date >= date('now', '-3 months', 'start of month')
+[API]       GROUP BY month
+[API]     )
+[API]   
+[API] 
+[API]     SELECT SUM(amount) as saved FROM transactions 
+[API]     WHERE type = 'transfer' AND date = date('now')
+[API]   
+[API] 
+[API]     SELECT 
+[API]       category_id,
+[API]       AVG(monthly_total) as avg_spend,
+[API]       MAX(monthly_total) as max_spend
+[API]     FROM (
+[API]       SELECT 
+[API]         category_id,
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(amount) as monthly_total
+[API]       FROM transactions
+[API]       WHERE type = 'expense'
+[API]         AND date >= date('now', '-4 months', 'start of month')
+[API]         AND date < date('now', 'start of month')
+[API]       GROUP BY category_id, month
+[API]     )
+[API]     GROUP BY category_id
+[API]     HAVING COUNT(*) >= 2
+[API]   
+[API] 
+[API]     SELECT category_id, SUM(amount) as current_spend
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND strftime('%Y-%m', date) = '2026-02'
+[API]     GROUP BY category_id
+[API]   
+[API] 
+[API]     SELECT 
+[API]       description,
+[API]       AVG(amount) as avg_amount,
+[API]       MAX(amount) as latest_amount,
+[API]       COUNT(*) as frequency
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND date >= date('now', '-6 months')
+[API]     GROUP BY LOWER(TRIM(description))
+[API]     HAVING frequency >= 3
+[API]   
+[API] 
+[API]     SELECT 
+[API]       strftime('%Y-%m', date) as month,
+[API]       SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expenses,
+[API]       SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income
+[API]     FROM transactions
+[API]     WHERE date >= date('now', '-3 months', 'start of month')
+[API]     GROUP BY month
+[API]     ORDER BY month DESC
+[API]   
+[API] 
+[API]     SELECT * FROM goals 
+[API]     WHERE is_completed = 0 AND deadline IS NOT NULL
+[API]   
+[API] 
+[API]     SELECT 
+[API]       AVG(monthly_surplus) as avg_surplus
+[API]     FROM (
+[API]       SELECT 
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(CASE WHEN type = 'income' THEN amount ELSE -amount END) as monthly_surplus
+[API]       FROM transactions
+[API]       WHERE date >= date('now', '-3 months', 'start of month')
+[API]       GROUP BY month
+[API]     )
+[API]   
+[API] 
+[API]     SELECT SUM(amount) as saved FROM transactions 
+[API]     WHERE type = 'transfer' AND date = date('now')
+[API]   
+[API] SELECT SUM(amount) as total FROM transactions WHERE strftime('%Y-%m', date) = '2026-02' AND type = 'income'
+[API] SELECT SUM(amount) as total FROM transactions WHERE strftime('%Y-%m', date) = '2026-02' AND type = 'expense'
+[API] SELECT value FROM settings WHERE key = 'monthly_salary'
+[API] SELECT t.*, c.name as category_name, c.icon as category_icon FROM transactions t LEFT JOIN categories c ON t.category_id = c.id ORDER BY t.date DESC
+[API] SELECT SUM(amount) as total FROM transactions WHERE strftime('%Y-%m', date) = '2026-02' AND type = 'income'
+[API] SELECT SUM(amount) as total FROM transactions WHERE strftime('%Y-%m', date) = '2026-02' AND type = 'expense'
+[API] SELECT value FROM settings WHERE key = 'monthly_salary'
+[API] SELECT t.*, c.name as category_name, c.icon as category_icon FROM transactions t LEFT JOIN categories c ON t.category_id = c.id ORDER BY t.date DESC
+[API] SELECT * FROM categories ORDER BY name
+[API] SELECT * FROM categories ORDER BY name
+[API] 
+[API]     SELECT 
+[API]       category_id,
+[API]       AVG(monthly_total) as avg_spend,
+[API]       MAX(monthly_total) as max_spend
+[API]     FROM (
+[API]       SELECT 
+[API]         category_id,
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(amount) as monthly_total
+[API]       FROM transactions
+[API]       WHERE type = 'expense'
+[API]         AND date >= date('now', '-4 months', 'start of month')
+[API]         AND date < date('now', 'start of month')
+[API]       GROUP BY category_id, month
+[API]     )
+[API]     GROUP BY category_id
+[API]     HAVING COUNT(*) >= 2
+[API]   
+[API] 
+[API]     SELECT category_id, SUM(amount) as current_spend
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND strftime('%Y-%m', date) = '2026-02'
+[API]     GROUP BY category_id
+[API]   
+[API] 
+[API]     SELECT 
+[API]       description,
+[API]       AVG(amount) as avg_amount,
+[API]       MAX(amount) as latest_amount,
+[API]       COUNT(*) as frequency
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND date >= date('now', '-6 months')
+[API]     GROUP BY LOWER(TRIM(description))
+[API]     HAVING frequency >= 3
+[API]   
+[API] 
+[API]     SELECT 
+[API]       strftime('%Y-%m', date) as month,
+[API]       SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expenses,
+[API]       SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income
+[API]     FROM transactions
+[API]     WHERE date >= date('now', '-3 months', 'start of month')
+[API]     GROUP BY month
+[API]     ORDER BY month DESC
+[API]   
+[API] 
+[API]     SELECT * FROM goals 
+[API]     WHERE is_completed = 0 AND deadline IS NOT NULL
+[API]   
+[API] 
+[API]     SELECT 
+[API]       AVG(monthly_surplus) as avg_surplus
+[API]     FROM (
+[API]       SELECT 
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(CASE WHEN type = 'income' THEN amount ELSE -amount END) as monthly_surplus
+[API]       FROM transactions
+[API]       WHERE date >= date('now', '-3 months', 'start of month')
+[API]       GROUP BY month
+[API]     )
+[API]   
+[API] 
+[API]     SELECT SUM(amount) as saved FROM transactions 
+[API]     WHERE type = 'transfer' AND date = date('now')
+[API]   
+[API] 
+[API]     SELECT 
+[API]       category_id,
+[API]       AVG(monthly_total) as avg_spend,
+[API]       MAX(monthly_total) as max_spend
+[API]     FROM (
+[API]       SELECT 
+[API]         category_id,
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(amount) as monthly_total
+[API]       FROM transactions
+[API]       WHERE type = 'expense'
+[API]         AND date >= date('now', '-4 months', 'start of month')
+[API]         AND date < date('now', 'start of month')
+[API]       GROUP BY category_id, month
+[API]     )
+[API]     GROUP BY category_id
+[API]     HAVING COUNT(*) >= 2
+[API]   
+[API] 
+[API]     SELECT category_id, SUM(amount) as current_spend
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND strftime('%Y-%m', date) = '2026-02'
+[API]     GROUP BY category_id
+[API]   
+[API] 
+[API]     SELECT 
+[API]       description,
+[API]       AVG(amount) as avg_amount,
+[API]       MAX(amount) as latest_amount,
+[API]       COUNT(*) as frequency
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND date >= date('now', '-6 months')
+[API]     GROUP BY LOWER(TRIM(description))
+[API]     HAVING frequency >= 3
+[API]   
+[API] 
+[API]     SELECT 
+[API]       strftime('%Y-%m', date) as month,
+[API]       SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expenses,
+[API]       SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income
+[API]     FROM transactions
+[API]     WHERE date >= date('now', '-3 months', 'start of month')
+[API]     GROUP BY month
+[API]     ORDER BY month DESC
+[API]   
+[API] 
+[API]     SELECT * FROM goals 
+[API]     WHERE is_completed = 0 AND deadline IS NOT NULL
+[API]   
+[API] 
+[API]     SELECT 
+[API]       AVG(monthly_surplus) as avg_surplus
+[API]     FROM (
+[API]       SELECT 
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(CASE WHEN type = 'income' THEN amount ELSE -amount END) as monthly_surplus
+[API]       FROM transactions
+[API]       WHERE date >= date('now', '-3 months', 'start of month')
+[API]       GROUP BY month
+[API]     )
+[API]   
+[API] 
+[API]     SELECT SUM(amount) as saved FROM transactions 
+[API]     WHERE type = 'transfer' AND date = date('now')
+[API]   
+[API] 
+[API]     SELECT 
+[API]       category_id,
+[API]       AVG(monthly_total) as avg_spend,
+[API]       MAX(monthly_total) as max_spend
+[API]     FROM (
+[API]       SELECT 
+[API]         category_id,
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(amount) as monthly_total
+[API]       FROM transactions
+[API]       WHERE type = 'expense'
+[API]         AND date >= date('now', '-4 months', 'start of month')
+[API]         AND date < date('now', 'start of month')
+[API]       GROUP BY category_id, month
+[API]     )
+[API]     GROUP BY category_id
+[API]     HAVING COUNT(*) >= 2
+[API]   
+[API] 
+[API]     SELECT category_id, SUM(amount) as current_spend
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND strftime('%Y-%m', date) = '2026-02'
+[API]     GROUP BY category_id
+[API]   
+[API] 
+[API]     SELECT 
+[API]       description,
+[API]       AVG(amount) as avg_amount,
+[API]       MAX(amount) as latest_amount,
+[API]       COUNT(*) as frequency
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND date >= date('now', '-6 months')
+[API]     GROUP BY LOWER(TRIM(description))
+[API]     HAVING frequency >= 3
+[API]   
+[API] 
+[API]     SELECT 
+[API]       strftime('%Y-%m', date) as month,
+[API]       SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expenses,
+[API]       SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income
+[API]     FROM transactions
+[API]     WHERE date >= date('now', '-3 months', 'start of month')
+[API]     GROUP BY month
+[API]     ORDER BY month DESC
+[API]   
+[API] 
+[API]     SELECT * FROM goals 
+[API]     WHERE is_completed = 0 AND deadline IS NOT NULL
+[API]   
+[API] 
+[API]     SELECT 
+[API]       AVG(monthly_surplus) as avg_surplus
+[API]     FROM (
+[API]       SELECT 
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(CASE WHEN type = 'income' THEN amount ELSE -amount END) as monthly_surplus
+[API]       FROM transactions
+[API]       WHERE date >= date('now', '-3 months', 'start of month')
+[API]       GROUP BY month
+[API]     )
+[API]   
+[API] 
+[API]     SELECT SUM(amount) as saved FROM transactions 
+[API]     WHERE type = 'transfer' AND date = date('now')
+[API]   
+[API] 
+[API]     SELECT 
+[API]       category_id,
+[API]       AVG(monthly_total) as avg_spend,
+[API]       MAX(monthly_total) as max_spend
+[API]     FROM (
+[API]       SELECT 
+[API]         category_id,
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(amount) as monthly_total
+[API]       FROM transactions
+[API]       WHERE type = 'expense'
+[API]         AND date >= date('now', '-4 months', 'start of month')
+[API]         AND date < date('now', 'start of month')
+[API]       GROUP BY category_id, month
+[API]     )
+[API]     GROUP BY category_id
+[API]     HAVING COUNT(*) >= 2
+[API]   
+[API] 
+[API]     SELECT category_id, SUM(amount) as current_spend
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND strftime('%Y-%m', date) = '2026-02'
+[API]     GROUP BY category_id
+[API]   
+[API] 
+[API]     SELECT 
+[API]       description,
+[API]       AVG(amount) as avg_amount,
+[API]       MAX(amount) as latest_amount,
+[API]       COUNT(*) as frequency
+[API]     FROM transactions
+[API]     WHERE type = 'expense' AND date >= date('now', '-6 months')
+[API]     GROUP BY LOWER(TRIM(description))
+[API]     HAVING frequency >= 3
+[API]   
+[API] 
+[API]     SELECT 
+[API]       strftime('%Y-%m', date) as month,
+[API]       SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expenses,
+[API]       SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income
+[API]     FROM transactions
+[API]     WHERE date >= date('now', '-3 months', 'start of month')
+[API]     GROUP BY month
+[API]     ORDER BY month DESC
+[API]   
+[API] 
+[API]     SELECT * FROM goals 
+[API]     WHERE is_completed = 0 AND deadline IS NOT NULL
+[API]   
+[API] 
+[API]     SELECT 
+[API]       AVG(monthly_surplus) as avg_surplus
+[API]     FROM (
+[API]       SELECT 
+[API]         strftime('%Y-%m', date) as month,
+[API]         SUM(CASE WHEN type = 'income' THEN amount ELSE -amount END) as monthly_surplus
+[API]       FROM transactions
+[API]       WHERE date >= date('now', '-3 months', 'start of month')
+[API]       GROUP BY month
+[API]     )
+[API]   
+[API] 
+[API]     SELECT SUM(amount) as saved FROM transactions 
+[API]     WHERE type = 'transfer' AND date = date('now')
+[API]   
+[API] Failed running 'index.js'
+[CLIENT] Killed
+[CLIENT] npm run dev --prefix client exited with code 137

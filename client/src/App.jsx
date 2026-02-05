@@ -7,6 +7,8 @@ import { LedgerView } from './features/transactions/LedgerView';
 import { SettingsPage } from './features/settings/SettingsPage';
 import { BudgetView } from './features/budgets/BudgetView';
 import { GoalsView } from './features/goals/GoalsView';
+import { InsightsPage } from './features/insights/InsightsPage';
+import { ForecastPage } from './features/forecast/ForecastPage';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import './App.css';
 
@@ -20,6 +22,8 @@ function App() {
             <Route path="add" element={<AddExpenseView />} />
             <Route path="transactions" element={<LedgerView />} />
             <Route path="budgets" element={<BudgetView />} />
+            <Route path="insights" element={<InsightsPage />} />
+            <Route path="forecast" element={<ForecastPage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="goals" element={<GoalsView />} />
           </Route>
