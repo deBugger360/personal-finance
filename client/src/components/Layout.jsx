@@ -213,9 +213,40 @@ export function Layout() {
                         <div className="w-10"></div> {/* Spacer */}
                     </div>
                 </header>
+ 
+                {/* Mobile Bottom Navigation (PWA Optimized) */}
+                <nav className="lg:hidden fixed bottom-2 left-4 right-4 bg-white/95 backdrop-blur-md border border-gray-200 px-2 py-2 flex items-center justify-around z-50 shadow-xl rounded-2xl pb-[env(safe-area-inset-bottom)]">
+                    {[
+                        { path: '/', label: 'Home', icon: LayoutDashboard },
+                        { path: '/transactions', label: 'Ledger', icon: Receipt },
+                        { path: '/add', label: 'Add', icon: PlusCircle, primary: true },
+                        { path: '/forecast', label: 'Safe', icon: TrendingUp },
+                        { path: '/insights', label: 'AI', icon: Lightbulb },
+                    ].map((item) => (
+                        <NavLink
+                            key={item.path}
+                            to={item.path}
+                            end={item.path === '/'}
+                            className={({ isActive }) =>
+                                `flex flex-col items-center justify-center min-w-[50px] transition-all ${isActive ? 'text-green-600' : 'text-gray-400'}`
+                            }
+                        >
+                            {item.primary ? (
+                                <div className="bg-green-600 text-white p-2.5 rounded-xl shadow-md -mt-10 border-4 border-white mb-2">
+                                    <item.icon size={22} strokeWidth={2.5} />
+                                </div>
+                            ) : (
+                                <>
+                                    <item.icon size={20} strokeWidth={2} />
+                                    <span className="text-[10px] font-bold mt-1 uppercase tracking-tighter">{item.label}</span>
+                                </>
+                            )}
+                        </NavLink>
+                    ))}
+                </nav>
 
                 {/* Page Content */}
-                <main className="flex-1 p-4 lg:p-8">
+                <main className="flex-1 p-4 lg:p-8 pb-32">
                     <Outlet />
                 </main>
             </div>

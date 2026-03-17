@@ -1,4 +1,5 @@
-const BASE_URL = 'http://localhost:3001/api';
+// Use relative path for production, fallback to localhost for local dev
+const BASE_URL = import.meta.env.PROD ? '/api' : 'http://localhost:3001/api';
 
 class ApiError extends Error {
   constructor(message, status, data) {
