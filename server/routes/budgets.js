@@ -2,6 +2,8 @@ const express = require('express');
 const { db } = require('../db');
 const { asyncHandler, AppError } = require('../middleware/error');
 const router = express.Router();
+const { budgetSchema } = require('../lib/schemas');
+const { validate } = require('../middleware/validate');
 
 // Get budgets status for a specific month (Budget vs Actual)
 router.get('/status', asyncHandler(async (req, res) => {
@@ -32,12 +34,8 @@ router.get('/status', asyncHandler(async (req, res) => {
 }));
 
 // Set a budget for a category/month
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', validate(budgetSchema), asyncHandler(async (req, res) => {
   const { category_id, month, amount } = req.body;
-  
-  if (!category_id || !month) {
-    throw new AppError('Category ID and Month are required', 400);
-  }
 
   if (amount > 0) {
     const stmt = db.prepare(`

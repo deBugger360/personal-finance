@@ -6,11 +6,12 @@ export function LedgerView() {
     const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [currentMonth, setCurrentMonth] = useState(new Date().toISOString().slice(0, 7));
     const fileRef = useRef(null);
 
     const fetchTransactions = () => {
         setLoading(true);
-        api.get('/transactions')
+        api.get(`/transactions?month=${currentMonth}`)
             .then(data => {
                 setTransactions(data);
                 setLoading(false);
@@ -23,7 +24,7 @@ export function LedgerView() {
 
     useEffect(() => {
         fetchTransactions();
-    }, []);
+    }, [currentMonth]);
 
     const handleDelete = async (id) => {
         if (window.confirm('Are you sure you want to delete this transaction?')) {
@@ -124,16 +125,25 @@ export function LedgerView() {
                 </div>
             </div>
 
-            {/* Search Bar */}
-            <div className="mb-6">
-                <div className="relative max-w-md">
+            {/* Filters */}
+            <div className="mb-6 flex flex-col md:flex-row gap-4">
+                <div className="relative flex-1 max-w-md">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                     <input
                         type="text"
-                        placeholder="Search transactions..."
+                        placeholder="Search current month..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                    />
+                </div>
+                <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium text-gray-700">Statement Period:</label>
+                    <input
+                        type="month"
+                        value={currentMonth}
+                        onChange={(e) => setCurrentMonth(e.target.value)}
+                        className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
                     />
                 </div>
             </div>

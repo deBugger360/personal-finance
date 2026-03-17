@@ -2,6 +2,8 @@ const express = require('express');
 const { db } = require('../db');
 const { asyncHandler, AppError } = require('../middleware/error');
 const router = express.Router();
+const { transactionSchema } = require('../lib/schemas');
+const { validate } = require('../middleware/validate');
 
 router.get('/', asyncHandler(async (req, res) => {
   const { month } = req.query; // Format: YYYY-MM
@@ -11,6 +13,11 @@ router.get('/', asyncHandler(async (req, res) => {
   if (month) {
     query += " WHERE strftime('%Y-%m', t.date) = ?";
     params.push(month);
+  } else {
+    // Default to current month to prevent huge payloads in production
+    const current = new Date().toISOString().slice(0, 7);
+    query += " WHERE strftime('%Y-%m', t.date) = ?";
+    params.push(current);
   }
   
   query += ' ORDER BY t.date DESC';
@@ -19,15 +26,11 @@ router.get('/', asyncHandler(async (req, res) => {
   res.json(stmt.all(...params));
 }));
 
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', validate(transactionSchema), asyncHandler(async (req, res) => {
   const { date, amount, description, category_id, type } = req.body;
-  
-  if (!amount || !category_id || !type) {
-    throw new AppError('Amount, Category, and Type are required', 400);
-  }
 
   const stmt = db.prepare('INSERT INTO transactions (date, amount, description, category_id, type) VALUES (?, ?, ?, ?, ?)');
-  const result = stmt.run(date || new Date().toISOString(), amount, description, category_id, type);
+  const result = stmt.run(date, amount, description, category_id, type);
   res.json({ id: result.lastInsertRowid });
 }));
 
@@ -35,6 +38,16 @@ router.post('/batch', asyncHandler(async (req, res) => {
   const transactions = req.body;
   if (!Array.isArray(transactions) || transactions.length === 0) {
     throw new AppError('Invalid batch data', 400);
+  }
+
+  // Security: Prevent DoS via recursive event loop blocking
+  if (transactions.length > 5000) {
+    throw new AppError('Batch exceeds limit (max 5,000)', 400);
+  }
+
+  // Basic validation for each item
+  for (const t of transactions) {
+     transactionSchema.parse(t);
   }
 
   const insert = db.prepare('INSERT INTO transactions (date, amount, description, category_id, type) VALUES (@date, @amount, @description, @category_id, @type)');

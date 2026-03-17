@@ -19,9 +19,10 @@ export function Home() {
         setLoading(true);
         setError(null);
         try {
+            const currentMonth = new Date().toISOString().slice(0, 7);
             const [sumData, transData, catsData] = await Promise.all([
-                api.get(`/summary?month=${new Date().toISOString().slice(0, 7)}`),
-                api.get('/transactions'),
+                api.get(`/summary?month=${currentMonth}`),
+                api.get(`/transactions?month=${currentMonth}`),
                 api.get('/categories')
             ]);
 

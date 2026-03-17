@@ -1,9 +1,12 @@
 const express = require('express');
 const { db } = require('../db');
 const router = express.Router();
+const { asyncHandler, AppError } = require('../middleware/error');
+const { goalSchema, fundGoalSchema } = require('../lib/schemas');
+const { validate } = require('../middleware/validate');
 
 // Get all goals with computed progress
-router.get('/', (req, res) => {
+router.get('/', asyncHandler(async (req, res) => {
   const stmt = db.prepare(`
     SELECT 
       g.*,
@@ -19,10 +22,10 @@ router.get('/', (req, res) => {
     ORDER BY g.priority ASC, g.deadline ASC
   `);
   res.json(stmt.all());
-});
+}));
 
 // Create a new goal
-router.post('/', (req, res) => {
+router.post('/', validate(goalSchema), asyncHandler(async (req, res) => {
   const { name, target_amount, deadline, priority } = req.body;
   const stmt = db.prepare(`
     INSERT INTO goals (name, target_amount, deadline, priority)
@@ -30,18 +33,24 @@ router.post('/', (req, res) => {
   `);
   const result = stmt.run(name, target_amount, deadline || null, priority || 2);
   res.json({ id: result.lastInsertRowid });
-});
+}));
 
 // "Fund" a goal (Internal Transfer)
-router.post('/:id/fund', (req, res) => {
+router.post('/:id/fund', validate(fundGoalSchema), asyncHandler(async (req, res) => {
   const goalId = req.params.id;
   const { amount, date } = req.body;
   
+  // Verify goal exists
+  const goalCheck = db.prepare('SELECT id FROM goals WHERE id = ?').get(goalId);
+  if (!goalCheck) {
+    throw new AppError('Goal not found', 404);
+  }
+
   // Find 'Savings' category for the transaction (fallback to ID 12 or search)
   const catStmt = db.prepare("SELECT id FROM categories WHERE type = 'savings' LIMIT 1");
   const cat = catStmt.get();
   
-  if (!cat) return res.status(500).json({ error: 'No Savings category found' });
+  if (!cat) throw new AppError('No Savings category found', 500);
 
   const stmt = db.prepare(`
     INSERT INTO transactions (date, amount, description, category_id, type, goal_id)
@@ -50,6 +59,6 @@ router.post('/:id/fund', (req, res) => {
   
   stmt.run(date || new Date().toISOString().split('T')[0], amount, 'Saved towards goal', cat.id, goalId);
   res.json({ success: true });
-});
+}));
 
 module.exports = router;
