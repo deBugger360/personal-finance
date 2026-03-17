@@ -1,31 +1,37 @@
 const express = require('express');
-const { db } = require('../db');
+const { pool } = require('../db');
+const { asyncHandler, AppError } = require('../middleware/error');
 const router = express.Router();
 
-router.get('/', (req, res) => {
+router.get('/', asyncHandler(async (req, res) => {
   const { month } = req.query; // YYYY-MM
-  if (!month) return res.status(400).json({ error: 'Month required' });
+  if (!month) throw new AppError('Month required', 400);
   
-  const incomeStmt = db.prepare("SELECT SUM(amount) as total FROM transactions WHERE strftime('%Y-%m', date) = ? AND type = 'income'");
-  const expenseStmt = db.prepare("SELECT SUM(amount) as total FROM transactions WHERE strftime('%Y-%m', date) = ? AND type = 'expense'");
+  const [incomeRows] = await pool.query(
+    "SELECT SUM(amount) as total FROM transactions WHERE DATE_FORMAT(date, '%Y-%m') = ? AND type = 'income'", 
+    [month]
+  );
+  const [expenseRows] = await pool.query(
+    "SELECT SUM(amount) as total FROM transactions WHERE DATE_FORMAT(date, '%Y-%m') = ? AND type = 'expense'",
+    [month]
+  );
   
-  const income = incomeStmt.get(month).total || 0;
-  const expense = expenseStmt.get(month).total || 0;
+  const income = incomeRows[0].total || 0;
+  const expense = expenseRows[0].total || 0;
   
   // Get Salary Setting
-  const salaryStmt = db.prepare("SELECT value FROM settings WHERE key = 'monthly_salary'");
-  const salaryRow = salaryStmt.get();
-  const salary = salaryRow ? parseFloat(salaryRow.value) : 0;
+  const [salaryRows] = await pool.query("SELECT value FROM settings WHERE \`key\` = 'monthly_salary'");
+  const salary = salaryRows.length ? parseFloat(salaryRows[0].value) : 0;
   
-  const totalIncome = salary + income;
+  const totalIncome = salary + Number(income);
   
   res.json({
     salary,
-    extra_income: income,
+    extra_income: Number(income),
     total_income: totalIncome,
-    total_expense: expense,
-    balance: totalIncome - expense
+    total_expense: Number(expense),
+    balance: totalIncome - Number(expense)
   });
-});
+}));
 
 module.exports = router;

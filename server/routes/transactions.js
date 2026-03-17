@@ -1,5 +1,5 @@
 const express = require('express');
-const { db } = require('../db');
+const { pool } = require('../db');
 const { asyncHandler, AppError } = require('../middleware/error');
 const router = express.Router();
 const { transactionSchema } = require('../lib/schemas');
@@ -11,27 +11,29 @@ router.get('/', asyncHandler(async (req, res) => {
   const params = [];
   
   if (month) {
-    query += " WHERE strftime('%Y-%m', t.date) = ?";
+    query += " WHERE DATE_FORMAT(t.date, '%Y-%m') = ?";
     params.push(month);
   } else {
     // Default to current month to prevent huge payloads in production
     const current = new Date().toISOString().slice(0, 7);
-    query += " WHERE strftime('%Y-%m', t.date) = ?";
+    query += " WHERE DATE_FORMAT(t.date, '%Y-%m') = ?";
     params.push(current);
   }
   
   query += ' ORDER BY t.date DESC';
   
-  const stmt = db.prepare(query);
-  res.json(stmt.all(...params));
+  const [rows] = await pool.query(query, params);
+  res.json(rows);
 }));
 
 router.post('/', validate(transactionSchema), asyncHandler(async (req, res) => {
   const { date, amount, description, category_id, type } = req.body;
 
-  const stmt = db.prepare('INSERT INTO transactions (date, amount, description, category_id, type) VALUES (?, ?, ?, ?, ?)');
-  const result = stmt.run(date, amount, description, category_id, type);
-  res.json({ id: result.lastInsertRowid });
+  const [result] = await pool.query(
+    'INSERT INTO transactions (date, amount, description, category_id, type) VALUES (?, ?, ?, ?, ?)',
+    [date, amount, description, category_id, type]
+  );
+  res.json({ id: result.insertId });
 }));
 
 router.post('/batch', asyncHandler(async (req, res) => {
@@ -45,37 +47,36 @@ router.post('/batch', asyncHandler(async (req, res) => {
     throw new AppError('Batch exceeds limit (max 5,000)', 400);
   }
 
-  // Basic validation for each item
+  // Basic validation and formatting for bulk insert
+  const values = [];
   for (const t of transactions) {
-     transactionSchema.parse(t);
+     const clean = transactionSchema.parse(t);
+     values.push([clean.date, clean.amount, clean.description, clean.category_id, clean.type]);
   }
 
-  const insert = db.prepare('INSERT INTO transactions (date, amount, description, category_id, type) VALUES (@date, @amount, @description, @category_id, @type)');
-  const insertMany = db.transaction((rows) => {
-    for (const row of rows) insert.run(row);
-  });
-
-  insertMany(transactions);
-  res.json({ success: true, count: transactions.length });
+  const [result] = await pool.query(
+    'INSERT INTO transactions (date, amount, description, category_id, type) VALUES ?',
+    [values]
+  );
+  
+  res.json({ success: true, count: result.affectedRows });
 }));
 
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', validate(transactionSchema), asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { date, amount, description, category_id, type } = req.body;
   
-  const stmt = db.prepare(`
+  const [result] = await pool.query(`
     UPDATE transactions 
-    SET date = COALESCE(?, date),
-        amount = COALESCE(?, amount),
-        description = COALESCE(?, description),
-        category_id = COALESCE(?, category_id),
-        type = COALESCE(?, type)
+    SET date = ?,
+        amount = ?,
+        description = ?,
+        category_id = ?,
+        type = ?
     WHERE id = ?
-  `);
-  
-  const result = stmt.run(date, amount, description, category_id, type, id);
+  `, [date, amount, description, category_id, type, id]);
 
-  if (result.changes === 0) {
+  if (result.affectedRows === 0) {
     throw new AppError('Transaction not found', 404);
   }
 
@@ -84,10 +85,9 @@ router.put('/:id', asyncHandler(async (req, res) => {
 
 router.delete('/:id', asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const stmt = db.prepare('DELETE FROM transactions WHERE id = ?');
-  const result = stmt.run(id);
+  const [result] = await pool.query('DELETE FROM transactions WHERE id = ?', [id]);
   
-  if (result.changes === 0) {
+  if (result.affectedRows === 0) {
     throw new AppError('Transaction not found', 404);
   }
   
