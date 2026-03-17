@@ -64,7 +64,7 @@ router.get('/', asyncHandler(async (req, res) => {
         type: 'risk',
         priority: 1,
         title: `Spending Spike: ${cat?.name || 'Unknown'}`,
-        message: `At current pace, you'll spend $${Math.round(projected)} this month. Your 3-month average is $${Math.round(base.avg_spend)} (${Math.round(percentAbove)}% increase).`,
+        message: `At current pace, you'll spend ₦${Math.round(projected)} this month. Your 3-month average is ₦${Math.round(base.avg_spend)} (${Math.round(percentAbove)}% increase).`,
         data: { category_id: current.category_id, projected, baseline: base.avg_spend }
       });
     }
@@ -95,7 +95,7 @@ router.get('/', asyncHandler(async (req, res) => {
         type: 'observation',
         priority: 2,
         title: `Subscription Change: ${sub.description}`,
-        message: `This recurring charge increased from $${sub.avg_amount.toFixed(2)} to $${sub.latest_amount.toFixed(2)} (+${percentChange.toFixed(0)}%).`,
+        message: `This recurring charge increased from ₦${sub.avg_amount.toFixed(2)} to ₦${sub.latest_amount.toFixed(2)} (+${percentChange.toFixed(0)}%).`,
         data: { description: sub.description, increase }
       });
     }
@@ -127,7 +127,7 @@ router.get('/', asyncHandler(async (req, res) => {
         type: 'trend',
         priority: 2,
         title: 'Lifestyle Inflation Detected',
-        message: `Expenses increased ${expenseChange.toFixed(0)}% from last month ($${Math.round(lastMonth.expenses)} → $${Math.round(thisMonth.expenses)}), while income remained stable.`,
+        message: `Expenses increased ${expenseChange.toFixed(0)}% from last month (₦${Math.round(lastMonth.expenses)} → ₦${Math.round(thisMonth.expenses)}), while income remained stable.`,
         data: { expenseChange, currentExpense: thisMonth.expenses }
       });
     }
@@ -173,7 +173,7 @@ router.get('/', asyncHandler(async (req, res) => {
         type: 'risk',
         priority: 1,
         title: `Goal at Risk: ${goal.name}`,
-        message: `Deadline is in ${Math.ceil(daysLeft)} days. You need $${Math.round(requiredMonthly)}/month, but recent surplus is $${Math.round(availableSurplus)}/month.`,
+        message: `Deadline is in ${Math.ceil(daysLeft)} days. You need ₦${Math.round(requiredMonthly)}/month, but recent surplus is ₦${Math.round(availableSurplus)}/month.`,
         data: { goal_id: goal.id, shortfall: requiredMonthly - availableSurplus }
       });
     }
@@ -185,7 +185,7 @@ router.get('/', asyncHandler(async (req, res) => {
       type: 'risk',
       priority: 2,
       title: 'Goal Conflict Detected',
-      message: `Your active goals require $${Math.round(totalDemand)}/month, but your average surplus is $${Math.round(availableSurplus)}/month. Consider adjusting deadlines or priorities.`,
+      message: `Your active goals require ₦${Math.round(totalDemand)}/month, but your average surplus is ₦${Math.round(availableSurplus)}/month. Consider adjusting deadlines or priorities.`,
       data: { demand: totalDemand, supply: availableSurplus, ratio: totalDemand / availableSurplus }
     });
   }
@@ -200,7 +200,7 @@ router.get('/', asyncHandler(async (req, res) => {
       type: 'opportunity',
       priority: 3,
       title: 'Surplus Available',
-      message: `You have an average surplus of $${Math.round(availableSurplus)}/month. Consider allocating extra to "${activeGoal.name}" to accelerate progress.`,
+      message: `You have an average surplus of ₦${Math.round(availableSurplus)}/month. Consider allocating extra to "${activeGoal.name}" to accelerate progress.`,
       data: { surplus: availableSurplus }
     });
   }
@@ -219,7 +219,7 @@ router.get('/', asyncHandler(async (req, res) => {
       type: 'success',
       priority: 0,
       title: 'Progress Made! 🎯',
-      message: `You contributed $${todaySavings.saved.toFixed(2)} to your goals today.`,
+      message: `You contributed ₦${todaySavings.saved.toFixed(2)} to your goals today.`,
       data: { amount: todaySavings.saved }
     });
   }

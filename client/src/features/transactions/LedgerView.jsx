@@ -189,7 +189,7 @@ export function LedgerView() {
                                             <div className={`flex items-center justify-end gap-1 ${t.type === 'income' ? 'text-green-600' : 'text-gray-900'}`}>
                                                 {t.type === 'income' ? <ArrowDownLeft size={16} /> : null}
                                                 {t.type === 'expense' ? '-' : '+'}
-                                                ${Number(t.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                ₦{Number(t.amount).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

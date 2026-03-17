@@ -59,9 +59,9 @@ router.get('/', asyncHandler(async (req, res) => {
     currentSpend: currentSpend?.spent || 0,
     daysRemaining,
     confidence,
-    explanation: `Based on your 3-month average daily spending of $${(dailyVelocity?.daily_avg || 0).toFixed(2)}, you are projected to spend $${Math.round(projectedTotalSpend)} total this month.`,
+    explanation: `Based on your 3-month average daily spending of ₦${(dailyVelocity?.daily_avg || 0).toFixed(2)}, you are projected to spend ₦${Math.round(projectedTotalSpend)} total this month.`,
     assumptions: [
-      `You will spend ${(dailyVelocity?.daily_avg || 0).toFixed(2)}/day for the remaining ${daysRemaining} days`,
+      `You will spend ₦${(dailyVelocity?.daily_avg || 0).toFixed(2)}/day for the remaining ${daysRemaining} days`,
       'Does not account for large planned expenses'
     ]
   };
@@ -168,7 +168,7 @@ router.get('/', asyncHandler(async (req, res) => {
     type: 'savings_goal_eta',
     goals: goalETAs,
     monthlySurplus: Math.round(monthlySurplus?.avg_surplus || 0),
-    explanation: `Based on your 3-month average surplus of $${Math.round(monthlySurplus?.avg_surplus || 0)}/month`,
+    explanation: `Based on your 3-month average surplus of ₦${Math.round(monthlySurplus?.avg_surplus || 0)}/month`,
     assumptions: ['100% of surplus goes to goals (optimistic)']
   };
 
@@ -183,8 +183,8 @@ router.get('/', asyncHandler(async (req, res) => {
     projectedChange: Math.round(drift),
     direction: drift > 0 ? 'positive' : 'negative',
     message: drift > 0 
-      ? `If you maintain current habits, you will save $${Math.round(drift)} over the next 3 months.`
-      : `If you maintain current habits, you will lose $${Math.abs(Math.round(drift))} over the next 3 months.`,
+      ? `If you maintain current habits, you will save ₦${Math.round(drift)} over the next 3 months.`
+      : `If you maintain current habits, you will lose ₦${Math.abs(Math.round(drift))} over the next 3 months.`,
     confidence: 'medium',
     explanation: 'Based on the last 3 months of income minus expenses',
     assumptions: ['Income and expenses remain stable']

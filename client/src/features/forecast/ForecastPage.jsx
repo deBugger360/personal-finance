@@ -96,12 +96,12 @@ function EndOfMonthCard({ data }) {
                     <div>
                         <p className="text-xs text-gray-500 uppercase tracking-wide">Projected</p>
                         <p className={`text-3xl font-bold ${isNegative ? 'text-red-600' : 'text-gray-900'}`}>
-                            ${projected_balance.toLocaleString()}
+                            ₦{projected_balance.toLocaleString()}
                         </p>
                     </div>
                     <div className="text-right">
                         <p className="text-xs text-gray-500 uppercase tracking-wide">Current</p>
-                        <p className="text-xl font-semibold text-gray-700">${current_balance.toLocaleString()}</p>
+                        <p className="text-xl font-semibold text-gray-700">₦{current_balance.toLocaleString()}</p>
                     </div>
                 </div>
 

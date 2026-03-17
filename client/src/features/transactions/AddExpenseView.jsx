@@ -89,7 +89,7 @@ export function AddExpenseView() {
                         {type === 'expense' ? 'How much did you spend?' : 'How much did you receive?'}
                     </label>
                     <div className="relative inline-block max-w-[80%]">
-                        <span className="absolute left-0 top-1/2 -translate-y-1/2 text-4xl font-bold text-gray-400">$</span>
+                        <span className="absolute left-0 top-1/2 -translate-y-1/2 text-4xl font-bold text-gray-400">₦</span>
                         <input
                             type="number"
                             value={amount}

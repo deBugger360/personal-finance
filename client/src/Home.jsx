@@ -145,7 +145,7 @@ export function Home() {
                                         <div className={`font-bold text-right ${t.type === 'income' ? 'text-green-600' : 'text-gray-900'
                                             }`}>
                                             {t.type === 'expense' ? '-' : '+'}
-                                            ${Number(t.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            ₦{Number(t.amount).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                         </div>
                                     </div>
                                 ))}
