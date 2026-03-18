@@ -19,12 +19,7 @@
     },
     {
       "source": "/(.*)",
-      "destination": "client/$1",
-      "check": true
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/client/index.html"
+      "destination": "/client/dist/$1"
     }
   ]
 }
