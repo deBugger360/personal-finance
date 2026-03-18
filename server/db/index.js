@@ -1,14 +1,18 @@
 const mysql = require('mysql2/promise');
 
-// Configuration - In production, these should come from environment variables
+// NOTE: On cPanel, database names are prefixed with your account username
+// e.g. if your cPanel user is "dabiusv7f" and DB is "personal_finance",
+// set MYSQL_DATABASE=dabiusv7f_personal_finance in your Vercel env vars.
 const pool = mysql.createPool({
-  host: process.env.MYSQL_HOST || 'localhost',
-  user: process.env.MYSQL_USER || 'root',
+  host:     process.env.MYSQL_HOST     || 'localhost',
+  port:     process.env.MYSQL_PORT     || 3306,
+  user:     process.env.MYSQL_USER     || 'root',
   password: process.env.MYSQL_PASSWORD || '',
   database: process.env.MYSQL_DATABASE || 'personal_finance',
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0
+  queueLimit: 0,
+  charset: 'utf8mb4'
 });
 
 async function initDb() {
@@ -27,12 +31,12 @@ async function initDb() {
     await conn.query(`
       CREATE TABLE IF NOT EXISTS categories (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(100) NOT NULL UNIQUE,
+        name VARCHAR(100) CHARACTER SET utf8mb4 NOT NULL UNIQUE,
         type ENUM('income', 'expense', 'savings') NOT NULL,
-        icon VARCHAR(50) DEFAULT '📦',
+        icon VARCHAR(50) CHARACTER SET utf8mb4 DEFAULT NULL,
         is_hidden TINYINT(1) DEFAULT 0,
-        description TEXT
-      )
+        description TEXT CHARACTER SET utf8mb4
+      ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
     `);
 
     await conn.query(`
