@@ -1,13 +1,7 @@
 const express = require('express');
-const { db } = require('../db');
+const { pool } = require('../db');
 const { asyncHandler } = require('../middleware/error');
 const router = express.Router();
-
-/**
- * AI V2: Insights Engine
- * Implements: Pulse Engine, Forecasting, Goal Analysis
- * Design Docs: INSIGHTS_ENGINE_SPEC.md, DATA_ANALYSIS_PLAN.md
- */
 
 router.get('/', asyncHandler(async (req, res) => {
   const insights = [];
@@ -17,12 +11,8 @@ router.get('/', asyncHandler(async (req, res) => {
   const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
   const monthProgress = dayOfMonth / daysInMonth;
 
-  // ============================================================
   // 1. PULSE ENGINE: Spending Spike Detection
-  // ============================================================
-  // Compare current month pacing to 3-month baseline
-  
-  const baseline = db.prepare(`
+  const [baseline] = await pool.query(`
     SELECT 
       category_id,
       AVG(monthly_total) as avg_spend,
@@ -30,39 +20,36 @@ router.get('/', asyncHandler(async (req, res) => {
     FROM (
       SELECT 
         category_id,
-        strftime('%Y-%m', date) as month,
+        DATE_FORMAT(date, '%Y-%m') as month,
         SUM(amount) as monthly_total
       FROM transactions
       WHERE type = 'expense'
-        AND date >= date('now', '-4 months', 'start of month')
-        AND date < date('now', 'start of month')
+        AND date >= DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 4 MONTH), '%Y-%m-01')
+        AND date < DATE_FORMAT(NOW(), '%Y-%m-01')
       GROUP BY category_id, month
-    )
+    ) sub
     GROUP BY category_id
     HAVING COUNT(*) >= 2
-  `).all();
+  `);
 
-  const currentPace = db.prepare(`
+  const [currentPace] = await pool.query(`
     SELECT category_id, SUM(amount) as current_spend
     FROM transactions
-    WHERE type = 'expense' AND strftime('%Y-%m', date) = ?
+    WHERE type = 'expense' AND DATE_FORMAT(date, '%Y-%m') = ?
     GROUP BY category_id
-  `).all(currentMonth);
+  `, [currentMonth]);
 
   const baselineMap = Object.fromEntries(baseline.map(b => [b.category_id, b]));
-  
+
   for (const current of currentPace) {
     const base = baselineMap[current.category_id];
-    if (!base) continue; // Not enough history
-    
+    if (!base) continue;
     const projected = current.current_spend / monthProgress;
     const percentAbove = ((projected - base.avg_spend) / base.avg_spend) * 100;
-    
     if (percentAbove > 20 && monthProgress < 0.8) {
-      const cat = db.prepare('SELECT name FROM categories WHERE id = ?').get(current.category_id);
+      const [[cat]] = await pool.query('SELECT name FROM categories WHERE id = ?', [current.category_id]);
       insights.push({
-        type: 'risk',
-        priority: 1,
+        type: 'risk', priority: 1,
         title: `Spending Spike: ${cat?.name || 'Unknown'}`,
         message: `At current pace, you'll spend ₦${Math.round(projected)} this month. Your 3-month average is ₦${Math.round(base.avg_spend)} (${Math.round(percentAbove)}% increase).`,
         data: { category_id: current.category_id, projected, baseline: base.avg_spend }
@@ -70,62 +57,51 @@ router.get('/', asyncHandler(async (req, res) => {
     }
   }
 
-  // ============================================================
-  // 2. SUBSCRIPTION CREEP: Recurring Expense Inflation
-  // ============================================================
-  
-  const recurring = db.prepare(`
+  // 2. SUBSCRIPTION CREEP
+  const [recurring] = await pool.query(`
     SELECT 
       description,
       AVG(amount) as avg_amount,
       MAX(amount) as latest_amount,
       COUNT(*) as frequency
     FROM transactions
-    WHERE type = 'expense' AND date >= date('now', '-6 months')
+    WHERE type = 'expense' AND date >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
     GROUP BY LOWER(TRIM(description))
     HAVING frequency >= 3
-  `).all();
+  `);
 
   for (const sub of recurring) {
     const increase = sub.latest_amount - sub.avg_amount;
     const percentChange = (increase / sub.avg_amount) * 100;
-    
     if (percentChange > 5 && sub.latest_amount > 10) {
       insights.push({
-        type: 'observation',
-        priority: 2,
+        type: 'observation', priority: 2,
         title: `Subscription Change: ${sub.description}`,
-        message: `This recurring charge increased from ₦${sub.avg_amount.toFixed(2)} to ₦${sub.latest_amount.toFixed(2)} (+${percentChange.toFixed(0)}%).`,
+        message: `This recurring charge increased from ₦${Number(sub.avg_amount).toFixed(2)} to ₦${Number(sub.latest_amount).toFixed(2)} (+${percentChange.toFixed(0)}%).`,
         data: { description: sub.description, increase }
       });
     }
   }
 
-  // ============================================================
-  // 3. LIFESTYLE INFLATION: MoM Trend Analysis
-  // ============================================================
-  
-  const trendData = db.prepare(`
+  // 3. LIFESTYLE INFLATION
+  const [trendData] = await pool.query(`
     SELECT 
-      strftime('%Y-%m', date) as month,
+      DATE_FORMAT(date, '%Y-%m') as month,
       SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expenses,
       SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income
     FROM transactions
-    WHERE date >= date('now', '-3 months', 'start of month')
+    WHERE date >= DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 3 MONTH), '%Y-%m-01')
     GROUP BY month
     ORDER BY month DESC
-  `).all();
+  `);
 
   if (trendData.length >= 2) {
     const thisMonth = trendData[0];
     const lastMonth = trendData[1];
-    
     const expenseChange = ((thisMonth.expenses - lastMonth.expenses) / lastMonth.expenses) * 100;
-    
     if (expenseChange > 10 && thisMonth.income <= lastMonth.income * 1.05) {
       insights.push({
-        type: 'trend',
-        priority: 2,
+        type: 'trend', priority: 2,
         title: 'Lifestyle Inflation Detected',
         message: `Expenses increased ${expenseChange.toFixed(0)}% from last month (₦${Math.round(lastMonth.expenses)} → ₦${Math.round(thisMonth.expenses)}), while income remained stable.`,
         data: { expenseChange, currentExpense: thisMonth.expenses }
@@ -133,30 +109,22 @@ router.get('/', asyncHandler(async (req, res) => {
     }
   }
 
-  // ============================================================
-  // 4. GOAL FEASIBILITY: Conflict Detection
-  // ============================================================
-  
-  const goals = db.prepare(`
-    SELECT * FROM goals 
-    WHERE is_completed = 0 AND deadline IS NOT NULL
-  `).all();
+  // 4. GOAL FEASIBILITY
+  const [goals] = await pool.query("SELECT * FROM goals WHERE is_completed = 0 AND deadline IS NOT NULL");
 
-  // Calculate available surplus
-  const recentSurplus = db.prepare(`
-    SELECT 
-      AVG(monthly_surplus) as avg_surplus
+  const [[surplusRow]] = await pool.query(`
+    SELECT AVG(monthly_surplus) as avg_surplus
     FROM (
       SELECT 
-        strftime('%Y-%m', date) as month,
+        DATE_FORMAT(date, '%Y-%m') as month,
         SUM(CASE WHEN type = 'income' THEN amount ELSE -amount END) as monthly_surplus
       FROM transactions
-      WHERE date >= date('now', '-3 months', 'start of month')
+      WHERE date >= DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 3 MONTH), '%Y-%m-01')
       GROUP BY month
-    )
-  `).get();
+    ) sub
+  `);
 
-  const availableSurplus = recentSurplus?.avg_surplus || 0;
+  const availableSurplus = surplusRow?.avg_surplus || 0;
   let totalDemand = 0;
 
   for (const goal of goals) {
@@ -164,14 +132,10 @@ router.get('/', asyncHandler(async (req, res) => {
     const daysLeft = (new Date(goal.deadline) - new Date()) / (1000 * 60 * 60 * 24);
     const monthsLeft = Math.max(daysLeft / 30, 0.5);
     const requiredMonthly = remaining / monthsLeft;
-    
     totalDemand += requiredMonthly;
-    
-    // Individual goal risk
     if (daysLeft < 30 && remaining > availableSurplus * 0.5) {
       insights.push({
-        type: 'risk',
-        priority: 1,
+        type: 'risk', priority: 1,
         title: `Goal at Risk: ${goal.name}`,
         message: `Deadline is in ${Math.ceil(daysLeft)} days. You need ₦${Math.round(requiredMonthly)}/month, but recent surplus is ₦${Math.round(availableSurplus)}/month.`,
         data: { goal_id: goal.id, shortfall: requiredMonthly - availableSurplus }
@@ -179,52 +143,38 @@ router.get('/', asyncHandler(async (req, res) => {
     }
   }
 
-  // Overall goal conflict
   if (totalDemand > availableSurplus * 1.2 && goals.length > 1) {
     insights.push({
-      type: 'risk',
-      priority: 2,
+      type: 'risk', priority: 2,
       title: 'Goal Conflict Detected',
-      message: `Your active goals require ₦${Math.round(totalDemand)}/month, but your average surplus is ₦${Math.round(availableSurplus)}/month. Consider adjusting deadlines or priorities.`,
-      data: { demand: totalDemand, supply: availableSurplus, ratio: totalDemand / availableSurplus }
+      message: `Your active goals require ₦${Math.round(totalDemand)}/month, but your average surplus is ₦${Math.round(availableSurplus)}/month.`,
+      data: { demand: totalDemand, supply: availableSurplus }
     });
   }
 
-  // ============================================================
   // 5. OPPORTUNITY: Lazy Money
-  // ============================================================
-  
   if (availableSurplus > 200 && goals.length > 0) {
-    const activeGoal = goals[0]; // Assume first is highest priority
     insights.push({
-      type: 'opportunity',
-      priority: 3,
+      type: 'opportunity', priority: 3,
       title: 'Surplus Available',
-      message: `You have an average surplus of ₦${Math.round(availableSurplus)}/month. Consider allocating extra to "${activeGoal.name}" to accelerate progress.`,
+      message: `You have an average surplus of ₦${Math.round(availableSurplus)}/month. Consider allocating extra to "${goals[0].name}".`,
       data: { surplus: availableSurplus }
     });
   }
 
-  // ============================================================
-  // 6. CELEBRATION: Positive Wins
-  // ============================================================
-  
-  const todaySavings = db.prepare(`
-    SELECT SUM(amount) as saved FROM transactions 
-    WHERE type = 'transfer' AND date = date('now')
-  `).get();
-
+  // 6. CELEBRATION
+  const [[todaySavings]] = await pool.query(
+    "SELECT SUM(amount) as saved FROM transactions WHERE type = 'transfer' AND date = CURDATE()"
+  );
   if (todaySavings?.saved > 0) {
     insights.push({
-      type: 'success',
-      priority: 0,
+      type: 'success', priority: 0,
       title: 'Progress Made! 🎯',
-      message: `You contributed ₦${todaySavings.saved.toFixed(2)} to your goals today.`,
+      message: `You contributed ₦${Number(todaySavings.saved).toFixed(2)} to your goals today.`,
       data: { amount: todaySavings.saved }
     });
   }
 
-  // Sort by priority (0=Highest)
   res.json(insights.sort((a, b) => a.priority - b.priority));
 }));
 

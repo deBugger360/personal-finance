@@ -1,5 +1,5 @@
 const express = require('express');
-const { db } = require('../db');
+const { pool } = require('../db');
 const router = express.Router();
 const { asyncHandler, AppError } = require('../middleware/error');
 const { goalSchema, fundGoalSchema } = require('../lib/schemas');
@@ -7,7 +7,7 @@ const { validate } = require('../middleware/validate');
 
 // Get all goals with computed progress
 router.get('/', asyncHandler(async (req, res) => {
-  const stmt = db.prepare(`
+  const [rows] = await pool.query(`
     SELECT 
       g.*,
       COALESCE(SUM(CASE 
@@ -21,43 +21,36 @@ router.get('/', asyncHandler(async (req, res) => {
     GROUP BY g.id
     ORDER BY g.priority ASC, g.deadline ASC
   `);
-  res.json(stmt.all());
+  res.json(rows);
 }));
 
 // Create a new goal
 router.post('/', validate(goalSchema), asyncHandler(async (req, res) => {
   const { name, target_amount, deadline, priority } = req.body;
-  const stmt = db.prepare(`
-    INSERT INTO goals (name, target_amount, deadline, priority)
-    VALUES (?, ?, ?, ?)
-  `);
-  const result = stmt.run(name, target_amount, deadline || null, priority || 2);
-  res.json({ id: result.lastInsertRowid });
+  const [result] = await pool.query(
+    'INSERT INTO goals (name, target_amount, deadline, priority) VALUES (?, ?, ?, ?)',
+    [name, target_amount, deadline || null, priority || 2]
+  );
+  res.json({ id: result.insertId });
 }));
 
 // "Fund" a goal (Internal Transfer)
 router.post('/:id/fund', validate(fundGoalSchema), asyncHandler(async (req, res) => {
   const goalId = req.params.id;
   const { amount, date } = req.body;
-  
+
   // Verify goal exists
-  const goalCheck = db.prepare('SELECT id FROM goals WHERE id = ?').get(goalId);
-  if (!goalCheck) {
-    throw new AppError('Goal not found', 404);
-  }
+  const [goalRows] = await pool.query('SELECT id FROM goals WHERE id = ?', [goalId]);
+  if (goalRows.length === 0) throw new AppError('Goal not found', 404);
 
-  // Find 'Savings' category for the transaction (fallback to ID 12 or search)
-  const catStmt = db.prepare("SELECT id FROM categories WHERE type = 'savings' LIMIT 1");
-  const cat = catStmt.get();
-  
-  if (!cat) throw new AppError('No Savings category found', 500);
+  // Find 'Savings' category
+  const [catRows] = await pool.query("SELECT id FROM categories WHERE type = 'savings' LIMIT 1");
+  if (catRows.length === 0) throw new AppError('No Savings category found', 500);
 
-  const stmt = db.prepare(`
-    INSERT INTO transactions (date, amount, description, category_id, type, goal_id)
-    VALUES (?, ?, ?, ?, 'transfer', ?)
-  `);
-  
-  stmt.run(date || new Date().toISOString().split('T')[0], amount, 'Saved towards goal', cat.id, goalId);
+  await pool.query(
+    "INSERT INTO transactions (date, amount, description, category_id, type, goal_id) VALUES (?, ?, ?, ?, 'transfer', ?)",
+    [date || new Date().toISOString().split('T')[0], amount, 'Saved towards goal', catRows[0].id, goalId]
+  );
   res.json({ success: true });
 }));
 

@@ -1,36 +1,26 @@
 const express = require('express');
-const { db } = require('../db');
+const { pool } = require('../db');
 const { asyncHandler, AppError } = require('../middleware/error');
 const router = express.Router();
 
-/**
- * GET /api/data/export
- * Download full database state as JSON
- */
+// GET /api/data/export
 router.get('/export', asyncHandler(async (req, res) => {
   const { format } = req.query;
 
-  // CSV Export (Transactions Only)
   if (format === 'csv') {
-    const transactions = db.prepare(`
+    const [transactions] = await pool.query(`
       SELECT t.date, t.amount, t.type, c.name as category, t.description 
       FROM transactions t 
       LEFT JOIN categories c ON t.category_id = c.id 
       ORDER BY t.date DESC
-    `).all();
+    `);
 
     const headers = ['date', 'amount', 'type', 'category', 'description'];
     const csvRows = [headers.join(',')];
-
     for (const t of transactions) {
-      const row = headers.map(h => {
-        const val = t[h] || '';
-        // Escape quotes and wrap in quotes if contains comma
-        return `"${String(val).replace(/"/g, '""')}"`;
-      });
+      const row = headers.map(h => `"${String(t[h] || '').replace(/"/g, '""')}"`);
       csvRows.push(row.join(','));
     }
-
     const filename = `pf_transactions_${new Date().toISOString().slice(0, 10)}.csv`;
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
@@ -38,77 +28,66 @@ router.get('/export', asyncHandler(async (req, res) => {
   }
 
   // JSON Backup (Full State)
+  const [settings]     = await pool.query('SELECT * FROM settings');
+  const [categories]   = await pool.query('SELECT * FROM categories');
+  const [budgets]      = await pool.query('SELECT * FROM budgets');
+  const [goals]        = await pool.query('SELECT * FROM goals');
+  const [transactions] = await pool.query('SELECT * FROM transactions');
+
   const data = {
-    meta: {
-      version: 1,
-      exported_at: new Date().toISOString(),
-      app: "personal-finance-local"
-    },
-    settings: db.prepare('SELECT * FROM settings').all(),
-    categories: db.prepare('SELECT * FROM categories').all(),
-    budgets: db.prepare('SELECT * FROM budgets').all(),
-    goals: db.prepare('SELECT * FROM goals').all(),
-    transactions: db.prepare('SELECT * FROM transactions').all()
+    meta: { version: 1, exported_at: new Date().toISOString(), app: 'personal-finance-mysql' },
+    settings, categories, budgets, goals, transactions
   };
 
   const filename = `finance_backup_${new Date().toISOString().slice(0, 10)}.json`;
-  
   res.setHeader('Content-Type', 'application/json');
   res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
   res.send(JSON.stringify(data, null, 2));
 }));
 
-/**
- * POST /api/data/import
- * Restore database from JSON backup (DANGEROUS: Wipes existing data)
- */
+// POST /api/data/import
 router.post('/import', asyncHandler(async (req, res) => {
   const data = req.body;
-
   if (!data.meta || !Array.isArray(data.transactions)) {
     throw new AppError('Invalid backup file format', 400);
   }
 
-  // Transactional Restore
-  const restore = db.transaction(() => {
-    // 1. Wipe existing data (Order matters because of Foreign Keys)
-    db.prepare('DELETE FROM transactions').run();
-    db.prepare('DELETE FROM budgets').run();
-    db.prepare('DELETE FROM goals').run();
-    // We don't delete categories to avoid breaking icons if IDs shift, 
-    // but a full restore should probably respect the backup's IDs exactly.
-    // For this implementation, we will wipe categories too, trusting the backup has them.
-    db.prepare('DELETE FROM categories').run(); 
-    db.prepare('DELETE FROM settings').run();
-
-    // 2. Insert Settings
-    const insertSetting = db.prepare('INSERT INTO settings (key, value) VALUES (@key, @value)');
-    for (const row of data.settings || []) insertSetting.run(row);
-
-    // 3. Insert Categories (Preserve IDs)
-    const insertCat = db.prepare('INSERT INTO categories (id, name, type, icon, is_hidden, description) VALUES (@id, @name, @type, @icon, @is_hidden, @description)');
-    for (const row of data.categories || []) insertCat.run(row);
-
-    // 4. Insert Goals
-    const insertGoal = db.prepare('INSERT INTO goals (id, name, target_amount, saved_amount, deadline, priority, is_completed) VALUES (@id, @name, @target_amount, @saved_amount, @deadline, @priority, @is_completed)');
-    for (const row of data.goals || []) insertGoal.run(row);
-
-    // 5. Insert Budgets
-    const insertBudget = db.prepare('INSERT INTO budgets (id, category_id, month_iso, amount) VALUES (@id, @category_id, @month_iso, @amount)');
-    for (const row of data.budgets || []) insertBudget.run(row);
-
-    // 6. Insert Transactions
-    const insertTrans = db.prepare('INSERT INTO transactions (id, date, amount, description, category_id, goal_id, type) VALUES (@id, @date, @amount, @description, @category_id, @goal_id, @type)');
-    for (const row of data.transactions || []) insertTrans.run(row);
-  });
-
+  const conn = await pool.getConnection();
   try {
-    restore();
-    console.log(`System restored from backup: ${data.transactions.length} transactions recovered.`);
-    res.json({ success: true, message: "Restore successful", stats: { transactions: data.transactions.length } });
+    await conn.beginTransaction();
+
+    await conn.query('DELETE FROM transactions');
+    await conn.query('DELETE FROM budgets');
+    await conn.query('DELETE FROM goals');
+    await conn.query('DELETE FROM categories');
+    await conn.query('DELETE FROM settings');
+
+    for (const row of data.settings || [])
+      await conn.query('INSERT INTO settings (`key`, value) VALUES (?, ?)', [row.key, row.value]);
+
+    for (const row of data.categories || [])
+      await conn.query('INSERT INTO categories (id, name, type, icon, is_hidden, description) VALUES (?, ?, ?, ?, ?, ?)',
+        [row.id, row.name, row.type, row.icon, row.is_hidden, row.description]);
+
+    for (const row of data.goals || [])
+      await conn.query('INSERT INTO goals (id, name, target_amount, saved_amount, deadline, priority, is_completed) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [row.id, row.name, row.target_amount, row.saved_amount, row.deadline, row.priority, row.is_completed]);
+
+    for (const row of data.budgets || [])
+      await conn.query('INSERT INTO budgets (id, category_id, month_iso, amount) VALUES (?, ?, ?, ?)',
+        [row.id, row.category_id, row.month_iso, row.amount]);
+
+    for (const row of data.transactions || [])
+      await conn.query('INSERT INTO transactions (id, date, amount, description, category_id, goal_id, type) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [row.id, row.date, row.amount, row.description, row.category_id, row.goal_id, row.type]);
+
+    await conn.commit();
+    res.json({ success: true, message: 'Restore successful', stats: { transactions: data.transactions.length } });
   } catch (err) {
-    console.error("Restore failed:", err);
+    await conn.rollback();
     throw new AppError('Restore failed: ' + err.message, 500);
+  } finally {
+    conn.release();
   }
 }));
 
