@@ -1,7 +1,7 @@
 {
   "name": "personal-finance",
   "version": "1.0.0",
-  "description": "## Core Principles - **Offline-First**: All data lives locally in `finance.db`. - **Speed > Perfection**: Fast interactions, simple UI. - **Awareness > Punishment**: Visualization over strict budgeting.",
+  "description": "Personal Finance PWA with MySQL backend",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -11,6 +11,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "concurrently": "^9.2.1"
+    "body-parser": "^2.2.2",
+    "concurrently": "^9.2.1",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "mysql2": "^3.20.0",
+    "zod": "^4.3.6"
   }
 }
