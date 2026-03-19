@@ -1,19 +1,9 @@
 {
   "version": 2,
-  "name": "personal-finance-pwa",
-  "buildCommand": "cd client && npm install && npm run build",
-  "outputDirectory": "client/dist",
-  "installCommand": "cd server && npm install",
-  "framework": null,
-  "functions": {
-    "server/handler.js": {
-      "includeFiles": "server/**"
-    }
-  },
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/server/handler.js"
+      "destination": "/api/index.js"
     },
     {
       "source": "/((?!api).*)",
